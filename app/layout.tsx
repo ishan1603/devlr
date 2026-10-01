@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
 const geist = Geist({
@@ -70,9 +69,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh bg-bg text-fg antialiased">
-        <NotificationProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </NotificationProvider>
+        {/* Deliberately no auth provider here. Pages that need the user read
+            it on the server, and a client-side provider would ship the whole
+            Supabase client to every visitor of the landing page. */}
+        <NotificationProvider>{children}</NotificationProvider>
       </body>
     </html>
   );

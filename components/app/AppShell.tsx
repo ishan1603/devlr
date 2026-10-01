@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Badge, Wordmark, cx } from "@/components/ui";
-import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "@/lib/sign-out";
 
 interface NavItem {
   /** Path under the shell's base, "" for the home screen. */
@@ -58,7 +58,6 @@ export default function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useAuth();
   const nav = NAV.map((item) => ({ ...item, href: `${basePath}${item.path}`, isHome: item.path === "" }));
 
   async function handleSignOut() {

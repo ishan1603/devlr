@@ -183,12 +183,13 @@ minutes.
 | `npm run dev:inngest` | The background job runner |
 | `npm run jobs:kick` | Run ingest, EOL and Dev Pulse now |
 | `npm run db:migrate` / `db:status` | Apply or list migrations |
-| `npm test` | 247 tests, including the migrations against a real Postgres (in-process) |
+| `npm test` | 293 tests, including the migrations against a real Postgres (in-process) |
 | `npm run typecheck` / `npm run lint` | Static checks |
 | `npm run ai:check` | Which model pins and keys work |
 | `npm run sources:check` | Fetch every source once and report dead feeds |
 | `npm run email:preview` | Build a real issue from live sources, no database |
 | `node scripts/check-responsive.mjs <url>` | Screenshot every screen at four widths and fail on overflow |
+| `node scripts/page-weight.mjs <url> <path>` | Gzipped HTML, CSS and JavaScript a page needs for first load |
 
 ## How it fits together
 

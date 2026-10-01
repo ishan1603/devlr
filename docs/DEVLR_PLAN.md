@@ -27,6 +27,12 @@ Where the build differs from the plan below, the code is right and this note say
   first issue or a manual send cannot shift the regular one.
 - **A `/demo` area** renders every signed-in screen with mock data. It was not in the plan; it
   exists so the interface can be reviewed and screenshot-tested with no database.
+- **The JavaScript budget in section 6 was wrong.** It said under 120 KB gzipped on the landing
+  page, which ignored the framework: React 19 and the Next 16 runtime are about 165 KB on their
+  own. Measured with `scripts/page-weight.mjs`, the landing page ships 184 KB of JavaScript, of
+  which roughly 20 KB is Devlr's. It was 251 KB until the Supabase client was taken out of the
+  root layout, where it had been loading for every visitor. The honest budget is: nothing beyond
+  the framework on the landing page except the hero.
 
 Devlr turns Sendlr from a general news newsletter into the inbox a developer actually wants:
 news and deep dives for their stack, alerts when their dependencies break or get breached, a

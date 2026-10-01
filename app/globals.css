@@ -19,9 +19,13 @@
   --surface: #ffffff;
   --surface-sunken: #f1f1ec;
 
+  /* Three steps of text, each of which clears WCAG AA (4.5:1) on all three
+     backgrounds above. `subtle` is the lightest grey that still does: it is
+     used for dates and sources, which are small but are still content.
+     tests/ui/contrast.test.ts fails the build if an edit here breaks that. */
   --text: #111113;
-  --text-muted: #5c5c66;
-  --text-subtle: #8a8a94;
+  --text-muted: #52525c;
+  --text-subtle: #6b6b75;
 
   --border: #e4e4dd;
   --border-strong: #cfcfc6;
@@ -59,7 +63,7 @@
 
   --text: #f4f4f1;
   --text-muted: #a3a3ad;
-  --text-subtle: #6f6f7a;
+  --text-subtle: #82828d;
 
   --border: #232329;
   --border-strong: #34343c;

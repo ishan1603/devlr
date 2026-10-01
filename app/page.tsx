@@ -121,7 +121,7 @@ const PRINCIPLES = [
   {
     icon: MailCheck,
     title: "One click to stop",
-    body: "Unsubscribe works without signing in, per module or for everything.",
+    body: "Unsubscribe works from the email itself, without signing in. Nothing is deleted, so you can come back.",
   },
 ];
 

@@ -15,9 +15,9 @@ import {
   type ModuleSetting,
 } from "@/components/prefs/fields";
 import { Button, Card, CardHeader, Input, Label, Switch } from "@/components/ui";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { deleteAccount, saveMe } from "@/lib/api-client";
+import { signOut } from "@/lib/sign-out";
 import type { Me, ProfileUpdateInput } from "@/lib/profile";
 
 /**
@@ -196,7 +196,6 @@ export function ScheduleForm({ initial }: { initial: Me }) {
 
 export function SettingsPanel({ initial, feedUrl }: { initial: Me; feedUrl: string }) {
   const router = useRouter();
-  const { signOut } = useAuth();
   const { showError, showSuccess } = useNotification();
   const { saving, save } = useSave();
 

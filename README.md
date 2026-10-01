@@ -135,7 +135,7 @@ lib/
   inngest/            job definitions
   platform/           the delivery platform (see docs/DESIGN.md)
 supabase/migrations/  the schema
-tests/                247 tests
+tests/                293 tests
 ```
 
 ## Tests
@@ -144,7 +144,7 @@ tests/                247 tests
 npm test
 ```
 
-247 tests, no services required. The migrations are tested by running them: the suite starts
+293 tests, no services required. The migrations are tested by running them: the suite starts
 Postgres in-process (PGlite, with pgvector), applies the real files, and checks that the signup
 trigger fires, that every table has row level security, that one user cannot read or write
 another's rows, and that each SQL function returns what the code expects.

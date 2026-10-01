@@ -40,7 +40,8 @@ const C = {
   card: "#ffffff",
   ink: "#111113",
   body: "#3d3d45",
-  muted: "#7b7b86",
+  // The lightest grey that still clears 4.5:1 on the card and the page.
+  muted: "#6c6c77",
   line: "#e6e6e0",
   mastBg: "#0c0c0e",
   mastInk: "#f5f5f1",
@@ -49,7 +50,7 @@ const C = {
   accent: "#3f6212",
   sunken: "#f6f6f2",
   danger: "#b91c1c",
-  warning: "#a16207",
+  warning: "#955a06",
 };
 
 const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
@@ -71,6 +72,10 @@ const DARK_CSS = `
   .d-line { border-color: #26262c !important; }
   .d-accent { color: #bef264 !important; }
   .d-sunken { background: #1c1c20 !important; }
+  /* The light-theme warning and danger colours are too dark to read on a dark
+     card, so the countdown gets brighter ones here. */
+  .d-warning { color: #fbbf24 !important; }
+  .d-danger { color: #f87171 !important; }
 }
 @media only screen and (max-width: 620px) {
   .m-pad { padding-left: 20px !important; padding-right: 20px !important; }
@@ -233,10 +238,11 @@ function Repos({ section }: { section: ReposSection }) {
   );
 }
 
-function eolTone(daysLeft: number): string {
-  if (daysLeft <= 7) return C.danger;
-  if (daysLeft <= 30) return C.warning;
-  return C.muted;
+/** Colour for the countdown, plus the class that re-colours it in dark mode. */
+function eolTone(daysLeft: number): { color: string; className: string } {
+  if (daysLeft <= 7) return { color: C.danger, className: "d-line d-danger" };
+  if (daysLeft <= 30) return { color: C.warning, className: "d-line d-warning" };
+  return { color: C.muted, className: "d-line d-muted" };
 }
 
 export function eolPhrase(daysLeft: number): string {
@@ -256,6 +262,7 @@ function Eol({ section }: { section: EolSection }) {
               // No rule under the last row: the next section draws its own
               // above its label, and two lines a few pixels apart read as a bug.
               const rule = index === section.entries.length - 1 ? "none" : `1px solid ${C.line}`;
+              const tone = eolTone(entry.daysLeft);
               return (
               <tr key={entry.ref}>
                 <td
@@ -279,7 +286,7 @@ function Eol({ section }: { section: EolSection }) {
                   </div>
                 </td>
                 <td
-                  className="d-line"
+                  className={tone.className}
                   align="right"
                   style={{
                     padding: "10px 0",
@@ -290,7 +297,7 @@ function Eol({ section }: { section: EolSection }) {
                     fontSize: 12,
                     lineHeight: "22px",
                     fontWeight: 600,
-                    color: eolTone(entry.daysLeft),
+                    color: tone.color,
                   }}
                 >
                   {eolPhrase(entry.daysLeft)}
