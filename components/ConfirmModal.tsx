@@ -1,101 +1,80 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { Button } from "@/components/ui";
 
-export interface ConfirmModalProps {
+interface ConfirmModalProps {
   isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
   title: string;
   message: string;
-  confirmText?: string;
-  cancelText?: string;
-  type?: "default" | "danger";
-  onConfirm: () => void;
-  onCancel: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: "default" | "danger";
+  isLoading?: boolean;
 }
 
 export default function ConfirmModal({
   isOpen,
+  onClose,
+  onConfirm,
   title,
   message,
-  confirmText = "CONFIRM",
-  cancelText = "CANCEL",
-  type = "default",
-  onConfirm,
-  onCancel,
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  tone = "default",
+  isLoading = false,
 }: ConfirmModalProps) {
-  const [isVisible, setIsVisible] = useState(false);
-
+  // Escape should dismiss, and the page behind must not scroll while a modal
+  // is up — both are things people expect and notice the absence of.
   useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
+    if (!isOpen) return;
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !isLoading) onClose();
     }
-  }, [isOpen]);
+
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen, onClose, isLoading]);
 
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
-    onConfirm();
-  };
-
-  const handleCancel = () => {
-    onCancel();
-  };
-
-  const getConfirmButtonStyles = () => {
-    if (type === "danger") {
-      return "bg-black text-white hover:bg-white hover:text-black border-black";
-    }
-    return "bg-white text-black hover:bg-black hover:text-white border-black";
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm"
+      onClick={() => !isLoading && onClose()}
+    >
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
-        onClick={handleCancel}
-      />
-
-      <div
-        className={`
-          relative bg-white border-2 border-black p-6 max-w-md w-full
-          transition-all duration-200 ease-out
-          ${isVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"}
-        `}
-        style={{
-          fontFamily: "Press Start 2P",
-          boxShadow: "6px 6px 0px #000000",
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        className="w-full max-w-[420px] rounded-xl border border-line bg-surface p-6 shadow-pop"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-center">
-          <h3 className="text-[12px] text-black mb-4">{title.toUpperCase()}</h3>
-          <p className="text-[10px] text-black mb-6 leading-relaxed">
-            {message.toUpperCase()}
-          </p>
+        <h2 id="confirm-title" className="text-[17px] font-semibold tracking-tight">
+          {title}
+        </h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-muted">{message}</p>
 
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all text-[10px] cursor-pointer"
-              style={{
-                fontFamily: "Press Start 2P",
-                boxShadow: "3px 3px 0px #000000",
-              }}
-            >
-              {cancelText}
-            </button>
-            <button
-              onClick={handleConfirm}
-              className={`px-4 py-2 border-2 transition-all text-[10px] cursor-pointer ${getConfirmButtonStyles()}`}
-              style={{
-                fontFamily: "Press Start 2P",
-                boxShadow: "3px 3px 0px #000000",
-              }}
-            >
-              {confirmText}
-            </button>
-          </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={isLoading}>
+            {cancelLabel}
+          </Button>
+          <Button
+            variant={tone === "danger" ? "danger" : "primary"}
+            onClick={onConfirm}
+            loading={isLoading}
+          >
+            {confirmLabel}
+          </Button>
         </div>
       </div>
     </div>

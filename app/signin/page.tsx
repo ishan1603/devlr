@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/client";
+import { Button, Input, Label, cx } from "@/components/ui";
+import { Wordmark } from "@/components/Navbar";
+import ThemeToggle from "@/components/ThemeToggle";
 
-export default function SignInPage() {
+function SignInInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -13,21 +17,16 @@ export default function SignInPage() {
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+  // /auth/callback redirects here with ?error= when an emailed link is stale.
+  const callbackError = useSearchParams().get("error");
 
   useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        router.replace("/dashboard");
-      }
-    };
-
-    checkUser();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.replace("/dashboard");
+    });
   }, [router, supabase.auth]);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
@@ -35,224 +34,172 @@ export default function SignInPage() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMessage("Check your email for the confirmation link!");
+
+        // Supabase does not reveal that an address is already registered, to
+        // stop attackers enumerating accounts. It returns a success with a
+        // placeholder user whose identities array is empty, and sends no mail.
+        // Reporting that as "check your inbox" leaves the person waiting for an
+        // email that will never arrive.
+        if (data.user && data.user.identities?.length === 0) {
+          setIsSignUp(false);
+          setError("An account with this email already exists. Sign in instead.");
+          return;
+        }
+
+        // With "Confirm email" disabled, which this app requires because it has
+        // no /auth/callback route to exchange a confirmation code, sign-up
+        // returns a live session.
+        if (data.session) {
+          router.push("/select");
+          return;
+        }
+
+        setMessage(
+          "Check your email to confirm your account. If nothing arrives, email confirmation " +
+            "is switched on in Supabase but the built-in mail service is rate limited."
+        );
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         router.push("/dashboard");
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err: any) {
+      const raw = String(err?.message ?? "");
+      if (/email not confirmed/i.test(raw)) {
+        setError(
+          "This account hasn't been confirmed yet. Turn off \"Confirm email\" in Supabase, " +
+            "or confirm the account, then sign in."
+        );
+      } else if (/invalid login credentials/i.test(raw)) {
+        setError("That email and password don't match an account.");
+      } else {
+        setError(raw || "Something went wrong. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Sendlr/ai</h1>
-          <p className="text-xl text-gray-600">
-            {isSignUp ? "Create your account" : "Sign in to your account"}
+    <div className="grid min-h-dvh place-items-center px-5 py-12">
+      <div className="absolute right-5 top-5">
+        <ThemeToggle />
+      </div>
+
+      <div className="w-full max-w-[400px]">
+        <div className="mb-8 text-center">
+          <Wordmark className="text-[32px]" />
+          <p className="mt-3 text-[15px] text-muted">
+            AI-written briefings on the topics you pick.
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* Mode tabs for clearer state indication */}
-          <div className="mb-6" role="tablist" aria-label="Authentication mode">
-            <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-lg">
+        <div className="rounded-xl border border-line bg-surface p-6 shadow-card">
+          <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg bg-surface-sunken p-1">
+            {[
+              { label: "Sign in", signUp: false },
+              { label: "Create account", signUp: true },
+            ].map((tab) => (
               <button
+                key={tab.label}
                 type="button"
-                role="tab"
-                aria-selected={!isSignUp}
                 onClick={() => {
-                  setIsSignUp(false);
+                  setIsSignUp(tab.signUp);
                   setError(null);
                   setMessage(null);
                 }}
-                className={`${
-                  !isSignUp
-                    ? "bg-white text-gray-900 shadow"
-                    : "text-gray-600 hover:text-gray-800"
-                } flex items-center justify-center py-2 rounded-md text-sm font-medium transition-colors`}
+                className={cx(
+                  "rounded-md py-1.5 text-[13px] font-medium transition-colors",
+                  isSignUp === tab.signUp
+                    ? "bg-surface text-fg shadow-sm"
+                    : "text-muted hover:text-fg"
+                )}
               >
-                Sign in
+                {tab.label}
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isSignUp}
-                onClick={() => {
-                  setIsSignUp(true);
-                  setError(null);
-                  setMessage(null);
-                }}
-                className={`${
-                  isSignUp
-                    ? "bg-white text-gray-900 shadow"
-                    : "text-gray-600 hover:text-gray-800"
-                } flex items-center justify-center py-2 rounded-md text-sm font-medium transition-colors`}
-              >
-                Sign up
-              </button>
-            </div>
+            ))}
           </div>
 
-          {/* Prominent mode badge + heading */}
-          <div className="flex items-center justify-center mb-6">
-            <span
-              aria-live="polite"
-              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase ${
-                isSignUp
-                  ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                  : "bg-blue-100 text-blue-700 border border-blue-200"
-              }`}
-            >
-              {isSignUp ? "Sign up" : "Sign in"}
-            </span>
-          </div>
-
-          <h2 className="text-2xl font-semibold text-center mb-6">
-            {isSignUp ? "Create your account" : "Welcome back"}
-          </h2>
-
-          <form onSubmit={handleAuth} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                <p className="text-sm text-red-600">Error: {error}</p>
-              </div>
-            )}
-
-            {message && (
-              <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                <p className="text-sm text-green-600 text-center">{message}</p>
-              </div>
-            )}
-
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
-              <input
+          <form onSubmit={handleAuth} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
                 id="email"
-                name="email"
                 type="email"
                 autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-black focus:outline-none ${
-                  isSignUp
-                    ? "focus:ring-emerald-500 focus:border-emerald-500"
-                    : "focus:ring-blue-500 focus:border-blue-500"
-                }`}
-                placeholder="Enter your email"
+                placeholder="you@example.com"
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <input
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between">
+                <Label htmlFor="password">Password</Label>
+                {!isSignUp && (
+                  <Link
+                    href="/forgot-password"
+                    className="text-[13px] font-medium text-accent hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
+              <Input
                 id="password"
-                name="password"
                 type="password"
                 autoComplete={isSignUp ? "new-password" : "current-password"}
                 required
+                minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`mt-1 block w-full px-3 py-2 border text-black border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none ${
-                  isSignUp
-                    ? "focus:ring-emerald-500 focus:border-emerald-500"
-                    : "focus:ring-blue-500 focus:border-blue-500"
-                }`}
-                placeholder="Enter your password"
+                placeholder={isSignUp ? "At least 6 characters" : "••••••••"}
               />
-              {isSignUp && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Use at least 6 characters.
-                </p>
-              )}
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full flex justify-center py-2 px-4 cursor-pointer border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  isLoading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : isSignUp
-                      ? "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
-                      : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
-                }`}
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3.042 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    {isSignUp ? "Creating account..." : "Signing in..."}
-                  </div>
-                ) : isSignUp ? (
-                  "Create Account"
-                ) : (
-                  "Sign In"
-                )}
-              </button>
-            </div>
+            {(error || callbackError) && (
+              <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-[13px] text-danger">
+                {error ?? callbackError}
+              </p>
+            )}
+            {message && (
+              <p className="rounded-lg bg-success-soft px-3 py-2 text-[13px] text-success">
+                {message}
+              </p>
+            )}
+
+            <Button type="submit" size="lg" loading={isLoading} className="w-full">
+              {isSignUp ? "Create account" : "Sign in"}
+            </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError(null);
-                setMessage(null);
-              }}
-              className="text-blue-600 hover:text-blue-500 text-sm font-medium cursor-pointer"
-            >
-              {isSignUp
-                ? "Already have an account? Sign in"
-                : "Don't have an account? Sign up"}
-            </button>
-          </div>
         </div>
+
+        <p className="mt-6 text-center text-[13px] text-muted">
+          {isSignUp ? "Already have an account?" : "New to Sendlr?"}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError(null);
+              setMessage(null);
+            }}
+            className="font-medium text-accent hover:underline"
+          >
+            {isSignUp ? "Sign in" : "Create one"}
+          </button>
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInInner />
+    </Suspense>
   );
 }

@@ -39,7 +39,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname === "/") {
+  // Only signed-in visitors get bounced to the app. This used to redirect
+  // unconditionally, so the marketing page was unreachable: a logged-out
+  // visitor went "/" -> "/dashboard" -> "/signin" and never saw it.
+  if (request.nextUrl.pathname === "/" && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

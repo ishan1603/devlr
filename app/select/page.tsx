@@ -5,319 +5,243 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import TimePicker from "@/components/TimePicker";
+import { Button, Card, CardHeader, Input, Label, Page, Skeleton, cx } from "@/components/ui";
 
-const categories = [
-  {
-    id: "technology",
-    name: "Technology",
-    description: "Latest tech news and innovations",
-  },
-  {
-    id: "business",
-    name: "Business",
-    description: "Business trends and market updates",
-  },
-  { id: "sports", name: "Sports", description: "Sports news and highlights" },
-  {
-    id: "entertainment",
-    name: "Entertainment",
-    description: "Movies, TV, and celebrity news",
-  },
-  {
-    id: "science",
-    name: "Science",
-    description: "Scientific discoveries and research",
-  },
-  { id: "health", name: "Health", description: "Health and wellness updates" },
-  {
-    id: "politics",
-    name: "Politics",
-    description: "Political news and current events",
-  },
-  {
-    id: "environment",
-    name: "Environment",
-    description: "Climate and environmental news",
-  },
+const CATEGORIES = [
+  { id: "technology", name: "Technology", description: "Software, hardware, AI and startups" },
+  { id: "business", name: "Business", description: "Markets, earnings and the economy" },
+  { id: "sports", name: "Sports", description: "Results, transfers and tournaments" },
+  { id: "entertainment", name: "Entertainment", description: "Film, TV, music and streaming" },
+  { id: "science", name: "Science", description: "Research, discoveries and space" },
+  { id: "health", name: "Health", description: "Medicine, treatments and wellbeing" },
+  { id: "politics", name: "Politics", description: "Policy, elections and government" },
+  { id: "environment", name: "Environment", description: "Climate, energy and conservation" },
 ];
 
-const frequencyOptions = [
-  { id: "daily", name: "Daily", description: "Every day" },
-  { id: "weekly", name: "Weekly", description: "Once a week" },
-  { id: "biweekly", name: "Bi-weekly", description: "Twice a week" },
+const FREQUENCIES = [
+  { id: "daily", name: "Daily", description: "Every morning" },
+  { id: "weekly", name: "Weekly", description: "Once every 7 days" },
+  // The backend treats biweekly as a ~14-day interval. This option used to be
+  // labelled "Twice a week", which promised the opposite of what it delivers.
+  { id: "biweekly", name: "Every two weeks", description: "Once every 14 days" },
+  { id: "monthly", name: "Monthly", description: "Once every 30 days" },
+  { id: "custom", name: "Custom", description: "Choose your own interval" },
 ];
 
 export default function SelectPage() {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedFrequency, setSelectedFrequency] = useState<string>("weekly");
-  const [selectedTime, setSelectedTime] = useState<string>("09:00");
-  const [isLoading, setIsLoading] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [frequency, setFrequency] = useState("weekly");
+  const [sendTime, setSendTime] = useState("09:00");
+  const [customDays, setCustomDays] = useState(3);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
   const { showSuccess, showError, showWarning } = useNotification();
 
-  // Consistent time formatting function to avoid hydration issues
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
-    if (user) {
-      fetch("/api/user-preferences")
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }
-          return null;
-        })
-        .then((data) => {
-          if (data) {
-            setSelectedCategories(data.categories || []);
-            setSelectedFrequency(data.frequency || "weekly");
-            setSelectedTime(data.send_time || "09:00");
-          }
-        })
-        .catch((error) => {
-          console.log("No existing preferences found");
-        });
-    }
+    if (!user) return;
+    let cancelled = false;
+
+    fetch("/api/user-preferences")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setSelected(data.categories ?? []);
+        setFrequency(data.frequency ?? "weekly");
+        setSendTime(data.send_time ?? "09:00");
+        if (data.custom_interval_days) setCustomDays(data.custom_interval_days);
+      })
+      .catch(() => {
+        // A missing row just means this is a first visit.
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId)
-        ? prev.filter((id) => id !== categoryId)
-        : [...prev, categoryId]
-    );
-  };
+  function toggle(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  }
 
-  const handleSavePreferences = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (selectedCategories.length === 0) {
-      showWarning("Selection Required", "Please select at least one category");
-      return;
-    }
-
-    if (!user) {
-      showError("Authentication Required", "Please sign in to continue");
+  async function handleSave() {
+    if (selected.length === 0) {
+      showWarning("Pick a topic", "Choose at least one topic to build your briefing from.");
       return;
     }
 
     setIsSaving(true);
     try {
-      const response = await fetch("/api/user-preferences", {
+      const res = await fetch("/api/user-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          categories: selectedCategories,
-          frequency: selectedFrequency,
-          send_time: selectedTime,
-          email: user.email,
+          categories: selected,
+          frequency,
+          send_time: sendTime,
+          custom_interval_days: frequency === "custom" ? customDays : undefined,
+          email: user?.email,
+          // send_time is a wall-clock time, so it is meaningless without the
+          // zone it was chosen in; the server stores UTC otherwise.
+          timezone,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save preferences");
-      }
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed to save");
 
-      showSuccess(
-        "Preferences Saved",
-        "You'll start receiving newsletters according to your schedule"
-      );
+      showSuccess("Saved", "Your next issue will follow this schedule.");
       router.push("/dashboard");
-    } catch (error) {
-      console.error("Error:", error);
-      showError("Save Failed", "Failed to save preferences. Please try again.");
+    } catch (err: any) {
+      showError("Couldn't save", err?.message ?? "Please try again.");
     } finally {
       setIsSaving(false);
     }
-  };
+  }
+
+  if (isLoading) {
+    return (
+      <Page className="space-y-6">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-96 w-full" />
+      </Page>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-[16px] text-black mb-4">CUSTOMIZE NEWSLETTER</h1>
-          <p className="text-[12px] text-black">
-            SELECT INTERESTS AND DELIVERY FREQUENCY
-          </p>
-        </div>
-
-        <form onSubmit={handleSavePreferences} className="card bg-white p-6">
-          <div className="mb-8">
-            <h2 className="text-[14px] text-black mb-4">CHOOSE CATEGORIES</h2>
-            <p className="text-[10px] text-black mb-6">
-              SELECT TOPICS FOR YOUR PERSONALIZED NEWSLETTER
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {categories.map((category) => (
-                <label
-                  key={category.id}
-                  className={`relative flex items-start p-4 border-2 border-black cursor-pointer transition-all ${
-                    selectedCategories.includes(category.id)
-                      ? "bg-black text-white"
-                      : "bg-white text-black hover:bg-black hover:text-white"
-                  }`}
-                  style={{
-                    boxShadow: selectedCategories.includes(category.id)
-                      ? "none"
-                      : "2px 2px 0px #000000",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={selectedCategories.includes(category.id)}
-                    onChange={() => handleCategoryToggle(category.id)}
-                  />
-                  <div className="flex items-center h-5">
-                    <div
-                      className={`w-4 h-4 border-2 flex items-center justify-center ${
-                        selectedCategories.includes(category.id)
-                          ? "border-white bg-white"
-                          : "border-black bg-white"
-                      }`}
-                    >
-                      {selectedCategories.includes(category.id) && (
-                        <div className="w-2 h-2 bg-black"></div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="ml-3">
-                    <div
-                      className="text-[10px] font-normal"
-                      style={{ fontFamily: "Press Start 2P" }}
-                    >
-                      {category.name.toUpperCase()}
-                    </div>
-                    <div
-                      className="text-[8px] mt-1"
-                      style={{ fontFamily: "Press Start 2P" }}
-                    >
-                      {category.description.toUpperCase()}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <div className="text-[10px] text-black mb-6">
-              {selectedCategories.length} CATEGOR
-              {selectedCategories.length !== 1 ? "IES" : "Y"} SELECTED
-            </div>
-          </div>
-
-          {/* Frequency Section */}
-          <div className="mb-8">
-            <h2 className="text-[14px] text-black mb-4">DELIVERY FREQUENCY</h2>
-            <p className="text-[10px] text-black mb-6">
-              HOW OFTEN TO RECEIVE NEWSLETTER?
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {frequencyOptions.map((frequency) => (
-                <label
-                  key={frequency.id}
-                  className={`relative flex items-start p-4 border-2 border-black cursor-pointer transition-all ${
-                    selectedFrequency === frequency.id
-                      ? "bg-black text-white"
-                      : "bg-white text-black hover:bg-black hover:text-white"
-                  }`}
-                  style={{
-                    boxShadow:
-                      selectedFrequency === frequency.id
-                        ? "none"
-                        : "2px 2px 0px #000000",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="frequency"
-                    className="sr-only"
-                    checked={selectedFrequency === frequency.id}
-                    onChange={() => setSelectedFrequency(frequency.id)}
-                  />
-                  <div className="flex items-center h-5">
-                    <div
-                      className={`w-4 h-4 border-2 flex items-center justify-center ${
-                        selectedFrequency === frequency.id
-                          ? "border-white bg-white"
-                          : "border-black bg-white"
-                      }`}
-                    >
-                      {selectedFrequency === frequency.id && (
-                        <div className="w-2 h-2 bg-black"></div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="ml-3">
-                    <div
-                      className="text-[10px] font-normal"
-                      style={{ fontFamily: "Press Start 2P" }}
-                    >
-                      {frequency.name.toUpperCase()}
-                    </div>
-                    <div
-                      className="text-[8px] mt-1"
-                      style={{ fontFamily: "Press Start 2P" }}
-                    >
-                      {frequency.description.toUpperCase()}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-[14px] text-black mb-4">DELIVERY TIME</h2>
-            <p className="text-[10px] text-black mb-6">
-              WHAT TIME TO SEND NEWSLETTER?
-            </p>
-
-            <div className="max-w-xs">
-              <TimePicker
-                initialTime={selectedTime}
-                onTimeChange={setSelectedTime}
-                disabled={isSaving}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-[10px] text-black">
-              {selectedCategories.length} CATEGOR
-              {selectedCategories.length !== 1 ? "IES" : "Y"} •{" "}
-              {selectedFrequency.toUpperCase()} •{" "}
-              {formatTime(selectedTime)}
-            </div>
-            <button
-              type="submit"
-              disabled={selectedCategories.length === 0 || isSaving}
-              className={`px-6 py-3 border-2 border-black text-[10px] font-normal cursor-pointer transition-all ${
-                selectedCategories.length === 0 || isSaving
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : "bg-white text-black hover:bg-black hover:text-white"
-              }`}
-              style={{
-                fontFamily: "Press Start 2P",
-                boxShadow:
-                  selectedCategories.length === 0 || isSaving
-                    ? "none"
-                    : "3px 3px 0px #000000",
-              }}
-            >
-              {isSaving ? "SAVING..." : "SAVE PREFERENCES"}
-            </button>
-          </div>
-        </form>
+    <Page className="space-y-6">
+      <div>
+        <h1 className="font-serif text-[34px] leading-tight tracking-tight">
+          What should we read for you?
+        </h1>
+        <p className="mt-1 text-[15px] text-muted">
+          Pick your topics and when you want them. You can change this any time.
+        </p>
       </div>
-    </div>
+
+      <Card>
+        <CardHeader
+          title="Topics"
+          description="We'll only include stories you haven't already been sent."
+          action={
+            <span className="shrink-0 text-[13px] tabular-nums text-muted">
+              {selected.length} selected
+            </span>
+          }
+        />
+        <div className="grid gap-2 p-4 sm:grid-cols-2">
+          {CATEGORIES.map((c) => {
+            const on = selected.includes(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => toggle(c.id)}
+                aria-pressed={on}
+                className={cx(
+                  "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+                  on
+                    ? "border-accent bg-accent-soft"
+                    : "border-line hover:border-line-strong hover:bg-surface-sunken"
+                )}
+              >
+                <span
+                  className={cx(
+                    "mt-0.5 grid size-4 shrink-0 place-items-center rounded border",
+                    on ? "border-accent bg-accent text-on-accent" : "border-line-strong"
+                  )}
+                >
+                  {on && (
+                    <svg viewBox="0 0 12 12" className="size-3" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M2.5 6.5l2.5 2.5 4.5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-medium">{c.name}</span>
+                  <span className="mt-0.5 block text-[13px] text-muted">{c.description}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader title="Delivery" description={`Times are in ${timezone}.`} />
+        <div className="space-y-5 p-5">
+          <fieldset>
+            <legend className="mb-2 text-[13px] font-medium">How often</legend>
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {FREQUENCIES.map((f) => {
+                const on = frequency === f.id;
+                return (
+                  <label
+                    key={f.id}
+                    className={cx(
+                      "cursor-pointer rounded-lg border p-3 transition-colors",
+                      on
+                        ? "border-accent bg-accent-soft"
+                        : "border-line hover:border-line-strong hover:bg-surface-sunken"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="frequency"
+                      value={f.id}
+                      checked={on}
+                      onChange={() => setFrequency(f.id)}
+                      className="sr-only"
+                    />
+                    <span className="block text-[14px] font-medium">{f.name}</span>
+                    <span className="mt-0.5 block text-[13px] text-muted">{f.description}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {frequency === "custom" && (
+            <div className="max-w-[280px] space-y-1.5">
+              <Label htmlFor="custom-days">Send every</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="custom-days"
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={customDays}
+                  onChange={(e) => setCustomDays(Number(e.target.value))}
+                  className="w-24"
+                />
+                <span className="text-[14px] text-muted">
+                  {customDays === 1 ? "day" : "days"}
+                </span>
+              </div>
+              <p className="text-[12px] text-subtle">Between 1 and 90 days.</p>
+            </div>
+          )}
+
+          <div className="max-w-[220px] space-y-1.5">
+            <Label htmlFor="send-time">Delivery time</Label>
+            <TimePicker id="send-time" value={sendTime} onChange={setSendTime} />
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={() => router.push("/dashboard")}>
+          Cancel
+        </Button>
+        <Button size="lg" onClick={handleSave} loading={isSaving} disabled={selected.length === 0}>
+          Save preferences
+        </Button>
+      </div>
+    </Page>
   );
 }

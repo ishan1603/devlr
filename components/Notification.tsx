@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { cx } from "@/components/ui";
 
 export interface NotificationProps {
   id: string;
@@ -10,6 +11,13 @@ export interface NotificationProps {
   duration?: number;
   onClose: (id: string) => void;
 }
+
+const TONES: Record<NotificationProps["type"], { bar: string; icon: string; path: string }> = {
+  success: { bar: "bg-success", icon: "text-success", path: "M5 12l4.5 4.5L19 7" },
+  error: { bar: "bg-danger", icon: "text-danger", path: "M18 6L6 18M6 6l12 12" },
+  warning: { bar: "bg-warning", icon: "text-warning", path: "M12 8v5m0 3.5v.5M12 3l9 16H3z" },
+  info: { bar: "bg-accent", icon: "text-accent", path: "M12 8h.01M11 12h1v4h1" },
+};
 
 export default function Notification({
   id,
@@ -22,121 +30,71 @@ export default function Notification({
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 10);
-
-    const autoCloseTimer = setTimeout(() => {
-      handleClose();
-    }, duration);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(autoCloseTimer);
-    };
-  }, [duration]);
-
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      }
-    };
-
-    if (isVisible) {
-      document.addEventListener("keydown", handleKeydown);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-    };
-  }, [isVisible]);
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsLeaving(true);
-    setTimeout(() => {
-      onClose(id);
-    }, 200);
-  };
+    // Matches the exit transition below, so the node is removed only once it
+    // has finished animating out.
+    setTimeout(() => onClose(id), 180);
+  }, [id, onClose]);
 
-  const getTypeStyles = () => {
-    switch (type) {
-      case "success":
-        return "bg-white text-black border-black";
-      case "error":
-        return "bg-black text-white border-black";
-      case "warning":
-        return "bg-white text-black border-black";
-      case "info":
-        return "bg-white text-black border-black";
-      default:
-        return "bg-white text-black border-black";
-    }
-  };
+  useEffect(() => {
+    const enter = setTimeout(() => setIsVisible(true), 10);
+    const autoClose = setTimeout(handleClose, duration);
+    return () => {
+      clearTimeout(enter);
+      clearTimeout(autoClose);
+    };
+  }, [duration, handleClose]);
 
-  const getIcon = () => {
-    switch (type) {
-      case "success":
-        return "✓";
-      case "error":
-        return "✕";
-      case "warning":
-        return "!";
-      case "info":
-        return "i";
-      default:
-        return "i";
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleClose();
     }
-  };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [handleClose]);
+
+  const tone = TONES[type];
 
   return (
     <div
-      className={`
-        fixed z-50 p-4 border-2 min-w-[300px] max-w-[400px]
-        transition-all duration-300 ease-out
-        ${getTypeStyles()}
-        ${
-          isVisible && !isLeaving
-            ? "translate-x-0 opacity-100"
-            : "translate-x-full opacity-0"
-        }
-      `}
-      style={{
-        fontFamily: "Press Start 2P",
-        boxShadow: isVisible && !isLeaving ? "4px 4px 0px #000000" : "none",
-        right: "16px",
-        top: `${80 + parseInt(id.slice(-1)) * 100}px`, // Better spacing for stacked notifications
-      }}
+      role="status"
+      aria-live="polite"
+      className={cx(
+        "pointer-events-auto flex w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line bg-surface shadow-pop",
+        "transition-[opacity,transform] duration-200 ease-out",
+        isVisible && !isLeaving ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+      )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <div
-              className={`w-6 h-6 border-2 flex items-center justify-center text-[8px] ${
-                type === "error"
-                  ? "border-white bg-white text-black"
-                  : "border-black bg-black text-white"
-              }`}
-            >
-              {getIcon()}
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-normal mb-1">
-              {title.toUpperCase()}
-            </div>
-            {message && (
-              <div className="text-[8px] opacity-80">
-                {message.toUpperCase()}
-              </div>
-            )}
-          </div>
+      <span className={cx("w-1 shrink-0", tone.bar)} aria-hidden="true" />
+
+      <div className="flex flex-1 items-start gap-3 p-3.5">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={cx("mt-0.5 size-4 shrink-0", tone.icon)}
+          aria-hidden="true"
+        >
+          <path d={tone.path} />
+        </svg>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-medium">{title}</p>
+          {message && <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{message}</p>}
         </div>
+
         <button
           onClick={handleClose}
-          className="flex-shrink-0 ml-3 w-4 h-4 border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all text-[8px] flex items-center justify-center p-0"
-          style={{ boxShadow: "1px 1px 0px #000000" }}
+          aria-label="Dismiss"
+          className="-m-1 shrink-0 rounded p-1 text-subtle transition-colors hover:text-fg"
         >
-          ✕
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+            <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
     </div>

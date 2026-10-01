@@ -1,37 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchArticles } from "@/lib/news";
 
+/**
+ * Debug helper for inspecting what the news layer returns for a set of
+ * categories. Gated to development: it is unauthenticated and each call spends
+ * NewsAPI quota, so leaving it reachable in production is a free way for anyone
+ * to exhaust the daily limit.
+ */
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   try {
-    const url = new URL(request.url);
-    const categoriesParam = url.searchParams.get("categories");
-
-    // Default categories or from query param
+    const categoriesParam = new URL(request.url).searchParams.get("categories");
     const categories = categoriesParam
-      ? categoriesParam.split(",").map((c) => c.trim())
-      : ["technology", "sports", "science", "business"];
-
-    console.log("Testing news fetch with categories:", categories);
+      ? categoriesParam.split(",").map((c) => c.trim()).filter(Boolean)
+      : ["technology", "business"];
 
     const articles = await fetchArticles(categories);
 
-    const summary = {
+    return NextResponse.json({
       totalArticles: articles.length,
-      categories: categories,
-      breakdown: categories.map((cat) => ({
-        category: cat,
-        count: articles.filter((a) => a.category === cat).length,
-      })),
-      sampleArticles: articles.slice(0, 10).map((a) => ({
-        title: a.title,
-        category: a.category,
-        description: a.description?.substring(0, 100) + "...",
-      })),
-    };
-
-    return NextResponse.json(summary);
+      categories,
+      byCategory: Object.fromEntries(
+        categories.map((c) => [c, articles.filter((a) => a.category === c).length])
+      ),
+      sample: articles.slice(0, 3),
+    });
   } catch (error) {
-    console.error("Test news API error:", error);
+    console.error("test-news error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

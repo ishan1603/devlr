@@ -1,53 +1,72 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
+import { Button, cx } from "@/components/ui";
+
+const NAV = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/select", label: "Topics" },
+];
+
+export function Wordmark({ className }: { className?: string }) {
+  return (
+    <span className={cx("font-serif text-[22px] leading-none tracking-tight", className)}>
+      Sendlr<span className="text-accent">.</span>
+    </span>
+  );
+}
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
-  const handleLogout = async () => {
+  if (!user) return null;
+
+  async function handleLogout() {
     await signOut();
     router.push("/signin");
-  };
-
-  if (!user) {
-    return null;
   }
 
   return (
-    <header className="bg-white border-b-2 border-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          <div className="flex items-center">
-            <Image
-              src="/logo.png"
-              alt="Sendlr/ai"
-              width={120}
-              height={40}
-              className="pixelated cursor-pointer"
-              style={{ imageRendering: "pixelated" }}
-              onClick={() => router.push("/dashboard")}
-            />
-          </div>
+    <header className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-6 px-5 sm:px-8">
+        <Link href="/dashboard" className="shrink-0">
+          <Wordmark />
+        </Link>
 
-          <div className="flex items-center space-x-6">
-            <span className="text-[10px] text-black">
-              Welcome, {user.email}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-all text-[10px] font-normal cursor-pointer"
-              style={{
-                fontFamily: "Press Start 2P",
-                boxShadow: "3px 3px 0px #000000",
-              }}
-            >
-              LOGOUT
-            </button>
-          </div>
+        <nav className="flex items-center gap-1">
+          {NAV.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cx(
+                  "rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
+                  active ? "bg-surface-sunken text-fg" : "text-muted hover:text-fg"
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2">
+          {/* The address matters (it is where newsletters land) but should not
+              dominate the bar, so it is muted and hidden on small screens. */}
+          <span className="hidden text-[13px] text-muted sm:inline" title={user.email}>
+            {user.email}
+          </span>
+          <ThemeToggle />
+          <Button variant="secondary" size="sm" onClick={handleLogout}>
+            Sign out
+          </Button>
         </div>
       </div>
     </header>

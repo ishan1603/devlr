@@ -5,15 +5,39 @@ async function delay(ms: number) {
 
 import { getEnhancedFallbackNews } from './fallback-news';
 
-export async function fetchArticles(
-  categories: string[]
-): Promise<
-  Array<{ title: string; url: string; description: string; category: string }>
-> {
+export interface Article {
+  title: string;
+  url: string;
+  description: string;
+  category: string;
+  source?: string;
+  publishedAt?: string;
+}
+
+/**
+ * Single mapping point for NewsAPI payloads.
+ *
+ * There are three fetch paths here (targeted query, top-headlines fallback,
+ * simplified query) and each used to build its own object literal, so
+ * `publishedAt` and `source` were dropped on all of them and the shapes were
+ * free to drift apart.
+ */
+function toArticle(raw: any, category: string): Article {
+  return {
+    title: raw.title,
+    url: raw.url,
+    description: raw.description || "No description available",
+    category,
+    source: raw.source?.name ?? undefined,
+    publishedAt: raw.publishedAt ?? undefined,
+  };
+}
+
+export async function fetchArticles(categories: string[]): Promise<Article[]> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   // Process categories sequentially with delays to avoid rate limiting
-  const allArticles: Array<{ title: string; url: string; description: string; category: string }> = [];
+  const allArticles: Article[] = [];
   
   for (let i = 0; i < categories.length; i++) {
     const category = categories[i];
@@ -110,12 +134,9 @@ export async function fetchArticles(
           console.log(
             `Fallback found ${fallbackData.articles?.length || 0} articles for ${category}`
           );
-          const fallbackArticles = fallbackData.articles.slice(0, 5).map((article: any) => ({
-            title: article.title,
-            url: article.url,
-            description: article.description || "No description available",
-            category: category,
-          }));
+          const fallbackArticles = fallbackData.articles
+            .slice(0, 5)
+            .map((a: any) => toArticle(a, category));
           allArticles.push(...fallbackArticles);
           continue; // Move to next category
         } else {
@@ -162,12 +183,9 @@ export async function fetchArticles(
           );
 
           if (simpleData.articles && simpleData.articles.length > 0) {
-            const simpleArticles = simpleData.articles.slice(0, 5).map((article: any) => ({
-              title: article.title,
-              url: article.url,
-              description: article.description || "No description available",
-              category: category,
-            }));
+            const simpleArticles = simpleData.articles
+              .slice(0, 5)
+              .map((a: any) => toArticle(a, category));
             allArticles.push(...simpleArticles);
             continue; // Move to next category
           }
@@ -191,12 +209,7 @@ export async function fetchArticles(
             !article.title.toLowerCase().includes("porn")
         )
         .slice(0, 5) // Take 5 per category for better content
-        .map((article: any) => ({
-          title: article.title,
-          url: article.url,
-          description: article.description,
-          category: category,
-        }));
+        .map((a: any) => toArticle(a, category));
 
       console.log(
         `Filtered to ${filteredArticles.length} articles for ${category}`

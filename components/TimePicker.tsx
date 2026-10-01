@@ -1,50 +1,42 @@
-import { useState } from "react";
+"use client";
 
 interface TimePickerProps {
-  initialTime: string;
-  onTimeChange: (time: string) => void;
+  value: string;
+  onChange: (time: string) => void;
   disabled?: boolean;
+  id?: string;
 }
 
-export default function TimePicker({
-  initialTime,
-  onTimeChange,
-  disabled = false,
-}: TimePickerProps) {
-  const [selectedTime, setSelectedTime] = useState(initialTime);
+/**
+ * Half-hour slots across the full day.
+ *
+ * The previous version offered whole hours from 06:00 to 23:00 only, which
+ * quietly made an early-morning briefing — arguably the most natural time to
+ * want one — impossible to choose.
+ */
+const OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const hour = Math.floor(i / 2);
+  const minute = i % 2 === 0 ? "00" : "30";
+  const value = `${String(hour).padStart(2, "0")}:${minute}`;
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return { value, label: `${hour12}:${minute} ${period}` };
+});
 
-  const handleTimeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newTime = event.target.value;
-    setSelectedTime(newTime);
-    onTimeChange(newTime);
-  };
-
-  // Generate time options (every hour from 6 AM to 11 PM)
-  const timeOptions = [];
-  for (let hour = 6; hour <= 23; hour++) {
-    const time24 = hour.toString().padStart(2, "0") + ":00";
-    const hour12 = hour <= 12 ? hour : hour - 12;
-    const ampm = hour < 12 ? "AM" : "PM";
-    const displayTime = `${hour12 === 0 ? 12 : hour12}:00 ${ampm}`;
-    timeOptions.push({ value: time24, label: displayTime });
-  }
-
+export default function TimePicker({ value, onChange, disabled = false, id }: TimePickerProps) {
   return (
-    <div className="space-y-2">
-      <label className="text-[12px] text-black block">SEND TIME</label>
-      <select
-        value={selectedTime}
-        onChange={handleTimeChange}
-        disabled={disabled}
-        className="w-full p-2 border-2 border-black bg-white text-[10px] text-black disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ fontFamily: "Press Start 2P" }}
-      >
-        {timeOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
+    <select
+      id={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-fg focus:border-accent focus:outline-none disabled:opacity-50"
+    >
+      {OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   );
 }

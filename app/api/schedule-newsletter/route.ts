@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { inngest } from "@/lib/inngest/client";
+import { buildDedupeKey } from "@/lib/newsletter/dedupe";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  // Get the user session
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -18,39 +18,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { scheduledTime } = body;
+    const { scheduledTime } = await request.json();
 
     if (!scheduledTime) {
-      return NextResponse.json(
-        { error: "Scheduled time is required." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Scheduled time is required." }, { status: 400 });
     }
 
     const scheduleDate = new Date(scheduledTime);
-    const now = new Date();
-
-    if (scheduleDate <= now) {
-      return NextResponse.json(
-        { error: "Scheduled time must be in the future." },
-        { status: 400 }
-      );
+    if (Number.isNaN(scheduleDate.getTime())) {
+      return NextResponse.json({ error: "Scheduled time is not a valid date." }, { status: 400 });
+    }
+    if (scheduleDate <= new Date()) {
+      return NextResponse.json({ error: "Scheduled time must be in the future." }, { status: 400 });
     }
 
-    // Get user preferences
     const { data: preferences, error } = await supabase
       .from("user_preferences")
-      .select("categories, frequency, email, is_active")
+      .select("is_active")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error || !preferences) {
       return NextResponse.json(
-        {
-          error:
-            "User preferences not found. Please set up your newsletter first.",
-        },
+        { error: "User preferences not found. Please set up your newsletter first." },
         { status: 404 }
       );
     }
@@ -62,17 +52,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send scheduled newsletter event to Inngest
+    const slot = scheduleDate.toISOString();
+    const dedupeKey = buildDedupeKey("scheduled", user.id, slot);
+
+    // A future `ts` is what actually delays the run; Inngest treats it as a
+    // sleepUntil at the head of the function.
     const { ids } = await inngest.send({
       name: "newsletter.schedule",
-      data: {
-        userId: user.id,
-        email: preferences.email,
-        categories: preferences.categories,
-        frequency: preferences.frequency,
-        isScheduled: true,
-        scheduledFor: scheduledTime,
-      },
+      data: { userId: user.id, kind: "scheduled", slot, dedupeKey },
       ts: scheduleDate.getTime(),
     });
 
@@ -80,13 +67,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Newsletter scheduled successfully",
       eventId: ids[0],
-      scheduledFor: scheduledTime,
+      scheduledFor: slot,
     });
   } catch (error) {
     console.error("Error in schedule-newsletter API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

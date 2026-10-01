@@ -84,7 +84,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   return (
     <NotificationContext.Provider value={contextValue}>
       {children}
-      <div className="fixed top-0 right-0 z-50 pointer-events-none">
+      <div className="pointer-events-none fixed right-0 top-0 z-50 flex flex-col items-end gap-2 p-4">
         {notifications.map((notification) => (
           <div key={notification.id} className="pointer-events-auto">
             <Notification {...notification} />

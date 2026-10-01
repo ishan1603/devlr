@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
 import { inngest } from "@/lib/inngest/client";
+import { buildDedupeKey, immediateSlot } from "@/lib/newsletter/dedupe";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  // Get the user session
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -18,19 +18,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get user preferences
     const { data: preferences, error } = await supabase
       .from("user_preferences")
-      .select("categories, frequency, email, is_active")
+      .select("categories, is_active")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error || !preferences) {
       return NextResponse.json(
-        {
-          error:
-            "User preferences not found. Please set up your newsletter first.",
-        },
+        { error: "User preferences not found. Please set up your newsletter first." },
         { status: 404 }
       );
     }
@@ -42,16 +38,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send immediate newsletter event to Inngest
+    // Minute-resolution slot: an impatient double-click resolves to the same key
+    // and the second event is suppressed rather than sending a second email.
+    const dedupeKey = buildDedupeKey("immediate", user.id, immediateSlot());
+
     const { ids } = await inngest.send({
       name: "newsletter.schedule",
-      data: {
-        userId: user.id,
-        email: preferences.email,
-        categories: preferences.categories,
-        frequency: preferences.frequency,
-        isImmediate: true,
-      },
+      data: { userId: user.id, kind: "immediate", dedupeKey },
     });
 
     return NextResponse.json({
@@ -61,9 +54,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error in send-newsletter API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
