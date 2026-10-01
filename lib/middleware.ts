@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/** Paths that need a session. Everything else is public. */
+const PROTECTED = ["/app", "/onboarding"];
+
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,12 +16,8 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -29,60 +26,38 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
+  // Do not run code between createServerClient and supabase.auth.getUser().
+  // A simple mistake there makes it very hard to debug users being randomly
+  // logged out.
+  //
   // IMPORTANT: DO NOT REMOVE auth.getUser()
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Only signed-in visitors get bounced to the app. This used to redirect
-  // unconditionally, so the marketing page was unreachable: a logged-out
-  // visitor went "/" -> "/dashboard" -> "/signin" and never saw it.
-  if (request.nextUrl.pathname === "/" && user) {
+  const { pathname } = request.nextUrl;
+
+  const redirectTo = (path: string) => {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    url.pathname = path;
+    url.search = "";
+    const response = NextResponse.redirect(url);
+    // Carry over any refreshed session cookies, or the redirect would drop them
+    // and sign the user out.
+    supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+    return response;
+  };
+
+  // Signed-in visitors skip the marketing page and the sign-in form. A
+  // signed-out visitor stays on "/", which is the whole point of having one.
+  if (user && (pathname === "/" || pathname === "/signin")) return redirectTo("/app");
+
+  if (!user && PROTECTED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return redirectTo("/signin");
   }
 
-  if (request.nextUrl.pathname === "/signin" && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  if (request.nextUrl.pathname === "/dashboard" && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/signin";
-    return NextResponse.redirect(url);
-  }
-
-  //   if (
-  //     !user &&
-  //     !request.nextUrl.pathname.startsWith('/login') &&
-  //     !request.nextUrl.pathname.startsWith('/auth')
-  //   ) {
-  //     // no user, potentially respond by redirecting the user to the login page
-  //     const url = request.nextUrl.clone()
-  //     url.pathname = '/login'
-  //     return NextResponse.redirect(url)
-  //   }
-
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
-
+  // IMPORTANT: return the supabaseResponse object as it is. If you create a new
+  // response, copy its cookies across (as redirectTo does above). Otherwise the
+  // browser and server fall out of sync and the session ends early.
   return supabaseResponse;
 }

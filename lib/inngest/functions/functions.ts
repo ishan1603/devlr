@@ -1,9 +1,18 @@
-import { scheduledNewsletterFunction } from "@/lib/inngest/functions/scheduled-newsletter";
-import { newsletterCronFunction } from "@/lib/inngest/functions/newsletter-cron";
-import { ingestArticlesFunction } from "@/lib/inngest/functions/ingest-articles";
+import {
+  enrichContent,
+  ingestContent,
+  pruneData,
+  refreshLifecycles,
+  refreshPulse,
+} from "@/lib/inngest/functions/content";
+import { scheduleIssues, sendIssue } from "@/lib/inngest/functions/delivery";
 
 export const functions = [
-  scheduledNewsletterFunction,
-  newsletterCronFunction,
-  ingestArticlesFunction,
+  ingestContent,
+  enrichContent,
+  refreshPulse,
+  refreshLifecycles,
+  pruneData,
+  scheduleIssues,
+  sendIssue,
 ];

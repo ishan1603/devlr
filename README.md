@@ -1,72 +1,160 @@
-# Sendlr AI - Personalized Newsletter SaaS Platform
+# Devlr.
 
-<div align="center">
-  <div>
-    <img src="https://img.shields.io/badge/-Next.JS-black?style=for-the-badge&logoColor=white&logo=nextdotjs&color=black" alt="next.js" />
-    <img src="https://img.shields.io/badge/-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="supabase" />
-    <img src="https://img.shields.io/badge/-Groq-FF6B35?style=for-the-badge&logo=groq&logoColor=white" alt="groq" />
-    <img src="https://img.shields.io/badge/-Inngest-6366F1?style=for-the-badge&logo=inngest&logoColor=white" alt="inngest" />
-    <img src="https://img.shields.io/badge/-Tailwind-00BCFF?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="tailwind" />
-    <img src="https://img.shields.io/badge/-TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="typescript" />
-  </div>
+**The developer inbox.** Devlr reads 121 developer sources, keeps what matters for the stack you
+actually use, and sends it as one email on your schedule: news and deep dives, warnings before
+a version you run reaches end of life, and the new repositories worth knowing about.
 
-  <h3 align="center">Sendlr AI - AI-Powered Newsletter SaaS with Next.js, Supabase & Groq</h3>
-  <img src="public/Screenshot 2025-08-06 000305.png" alt="demo" />
+![The Devlr landing page](docs/images/landing.png)
 
-</div>
+The whole thing runs on free tiers.
 
-## 📋 <a name="table">Table of Contents</a>
+## What it does
 
-1. 🤖 [Introduction](#introduction)
-2. ⚙️ [Tech Stack](#tech-stack)
-3. 🔋 [Features](#features)
+| Module | Status | |
+|---|---|---|
+| **Dev Digest** | Built | News, releases and deep dives ranked for your stack. One item per story, even when five outlets cover it, and never the same story twice. |
+| **EOL Watch** | Built | A heads-up at 90, 30 and 7 days before a version in your stack stops getting fixes. Dates come from the vendors, via endoflife.date. |
+| **Dev Pulse** | Built | New repositories that picked up stars fast, in the languages you write. |
+| **Feedback** | Built | Every story has a "more like this" and a "less like this" link. Use them and the next issue shifts. |
+| **Archive and feed** | Built | Every issue has a web page, and every account gets a private Atom feed. |
+| **Repo Guard** | Planned | Connect GitHub, pick repos, get told when a dependency is vulnerable, hijacked or deprecated, with the command that fixes it. |
+| **Learn** | Planned | A system design question at your level, with a worked answer. |
+| **Company Radar** | Planned | What the companies you follow shipped, wrote and open-sourced. |
+| **Release Radar** | Planned | Release notes for your dependencies, breaking changes first. |
 
-## <a name="introduction">🤖 Introduction</a>
+Modules have their own cadence, but everything due on the same day arrives as one email. If
+there is nothing new, nothing is sent.
 
-Sendlr AI is a sophisticated SaaS platform that automates the creation and delivery of personalized newsletters using artificial intelligence. Built from scratch with Next.js, Supabase, and Groq AI, it features secure user authentication, intelligent content curation, and automated scheduling. Sendlr AI enables users to receive AI-generated newsletters tailored to their interests, powered by advanced workflow orchestration and real-time data processing.
+| The dashboard | The email |
+|---|---|
+| ![The Devlr dashboard](docs/images/app.png) | ![A Devlr issue](docs/images/email.png) |
 
-## <a name="tech-stack">⚙️ Tech Stack</a>
+## Try it in two minutes
 
-- **[Next.js](https://nextjs.org/)** is a powerful React framework that enables the development of fast, scalable web applications with features like server-side rendering, static site generation, and API routes for building full-stack applications.
+No account or database needed for either of these.
 
-- **[Supabase](https://supabase.com/)** is an open-source backend-as-a-service platform that provides instant APIs, real-time subscriptions, authentication, storage, and a PostgreSQL database, enabling developers to build scalable and secure applications with ease.
+```bash
+npm install
+npm run dev
+```
 
-- **[Groq](https://groq.com/)** is a high-performance AI inference engine that provides ultra-fast language model processing, enabling real-time AI content generation with significantly lower latency than traditional solutions.
+Open <http://localhost:3000/demo>: every screen, with made-up data.
 
-- **[Inngest](https://www.inngest.com/)** is a durable workflow engine that provides reliable background job processing with automatic retries, error handling, and event-driven architecture for mission-critical operations.
+To see a real issue built from today's sources:
 
-- **[Tailwind CSS](https://tailwindcss.com/)** is a utility-first CSS framework that allows developers to design custom user interfaces by applying low-level utility classes directly in HTML, streamlining the design process.
+```bash
+cp .env.example .env.local     # add a GROQ_API_KEY for model-written copy, or skip it
+npm run email:preview
+```
 
-- **[TypeScript](https://www.typescriptlang.org/)** is a superset of JavaScript that adds static typing, providing better tooling, code quality, and error detection for developers, making it ideal for building large-scale applications.
+That runs the real fetchers, ranking, summariser and editor, and writes `.preview/issue.html`.
 
-- **[Nodemailer](https://nodemailer.com/)** is a modern email API service built for developers, providing reliable transactional email delivery with superior deliverability, real-time analytics, and comprehensive template management.
+Full setup, with sign-in and sending, is in [SETUP.md](SETUP.md).
 
-- **[NewsAPI](https://newsapi.org/)** is a comprehensive news aggregation service that provides real-time access to news articles from thousands of sources worldwide, enabling dynamic content curation.
+## How it works
 
-## <a name="features">🔋 Features</a>
+```
+  121 sources                         every 2 hours
+  RSS, Hacker News, Lobsters, DEV  ──────────────────►  ingest
+                                                           │  canonical URL, tags, popularity
+                                                           ▼
+                                                      content pool  (Postgres + pgvector)
+                                                           │
+                              once per article             ▼
+                              ───────────────────────►  enrich
+                                                           │  embed, cluster into stories,
+                                                           │  extract text, summarise
+                                                           ▼
+  every 30 minutes                                    ready to read
+  who is due, in their timezone?  ───►  scheduler          │
+                                           │               │
+                                           ▼               ▼
+                                        compose  ◄──  rank for this reader
+                                           │          (relevance, popularity, recency,
+                                           │           feedback, variety)
+                                           ▼
+                                        editor   subject, preheader, intro  (LangGraph)
+                                           │     write -> review -> rewrite -> template
+                                           ▼
+                                         send    one email, plain text included
+```
 
-👉 **AI-Powered Content Generation**: Advanced newsletter creation using Groq AI's LLaMA models to transform news articles into engaging, personalized content with contextual analysis and sentiment optimization.
+Four decisions carry most of the weight.
 
-👉 **Intelligent Category Selection**: Dynamic content curation system supporting 8 distinct news verticals (Technology, Business, Sports, Entertainment, Science, Health, Politics, Environment) with smart filtering.
+**Generate once, compose per reader.** Every article is embedded, clustered and summarised
+exactly once, and each reader's issue is assembled from that shared pool. The only model call
+made per reader is three short lines of copy. Cost grows with the number of articles, not the
+number of readers, which is what makes a free tier enough.
 
-👉 **Automated Scheduling System**: Sophisticated scheduling engine supporting multiple delivery frequencies (daily, weekly, bi-weekly) with timezone-aware delivery and user preference management.
+**Facts come from sources, not from the model.** A model writes the summary from the article's
+extracted text; it does not decide what happened. Before anything is sent, a reviewer that is
+plain code checks the draft: every number in the subject line and intro has to appear in the
+source material, and the subject has to be about something in the issue. A draft that fails is
+rewritten once, then replaced by a template.
 
-👉 **Durable Workflow Management**: Built with Inngest's reliable execution framework featuring automatic retries, error handling, and comprehensive monitoring for mission-critical newsletter delivery.
+**Style is enforced in code.** No em dashes, no exclamation marks, no stock phrases, no
+sentences that end in ", enabling X". A prompt can ask for that. [`lib/ai/style.ts`](lib/ai/style.ts)
+is what guarantees it, and it has its own test suite.
 
-👉 **User Authentication & Management**: Secure Supabase authentication with granular preference controls, subscription management, and real-time status updates.
+**Scheduling is a poll, not a chain.** A cron works out who is due in their own timezone and
+fans out. Nothing is queued for the future, so a missed tick heals itself, and each send claims
+a unique key in the database before doing any work, so a retry can never produce a second email.
 
-👉 **Real-time Dashboard**: Interactive control panel with live newsletter management, scheduling controls, preference updates, and comprehensive usage analytics.
+## Stack
 
-👉 **Professional Email Templates**: Responsive HTML email templates with organized content structure and delivery optimization through Resend integration.
+| | | Free-tier limit that matters |
+|---|---|---|
+| App | Next.js 16, React 19, Tailwind 4 | |
+| Database, auth | Supabase (Postgres, pgvector, row level security) | 500 MB |
+| Background jobs | Inngest | about 100k runs a month |
+| Agents | LangGraph.js | |
+| Models | Groq (`gpt-oss`), Gemini Flash-Lite | 200k tokens a day per Groq model |
+| Embeddings | Gemini | |
+| Email | Gmail SMTP, React Email templates | about 500 recipients a day |
+| Hosting | Vercel | |
 
-👉 **Modern UI/UX**: Custom retro-gaming aesthetic using Press Start 2P typography, pixelated components, and responsive layouts optimized for accessibility.
+Every limit is designed around rather than hoped away: content is pruned after 60 days, model
+calls are budgeted per provider per day in Postgres, and the router falls back across providers
+and then to templates, so an exhausted quota degrades the writing and never stops a send.
 
-👉 **Database Security**: Advanced PostgreSQL implementation with Row Level Security (RLS), optimized indexing, and automated timestamp management.
+## Project layout
 
-👉 **Background Job Processing**: Robust workflow orchestration with Inngest handling newsletter generation, scheduling, and delivery with fault tolerance.
+```
+app/                  pages and API routes
+  app/                the signed-in area (home, topics, schedule, issues, settings)
+  demo/               the same screens with mock data, development only
+  api/inngest/        where background jobs are served from
+components/           UI, including the 3D hero (components/landing)
+lib/
+  ai/                 model router, style guard, embeddings
+  sources/            the source registry and fetchers
+  content/            ingest, enrich, rank
+  modules/            digest, Dev Pulse, EOL Watch
+  delivery/           schedule, ledger, composer, editor
+  email/              the issue template
+  inngest/            job definitions
+  platform/           the delivery platform (see docs/DESIGN.md)
+supabase/migrations/  the schema
+tests/                247 tests
+```
 
-👉 **Cross-Device Compatibility**: Fully responsive design that works seamlessly across all devices with consistent user experience.
+## Tests
 
-👉 **Fallback Mechanisms**: Intelligent content generation fallbacks ensuring reliable newsletter delivery even when AI services are unavailable.
+```bash
+npm test
+```
 
-and many more, including scalable architecture, code reusability, and production-ready deployment patterns.
+247 tests, no services required. The migrations are tested by running them: the suite starts
+Postgres in-process (PGlite, with pgvector), applies the real files, and checks that the signup
+trigger fires, that every table has row level security, that one user cannot read or write
+another's rows, and that each SQL function returns what the code expects.
+
+`node scripts/check-responsive.mjs` drives a real browser over every screen at four widths and
+fails if any text ends up outside the viewport.
+
+## More
+
+- [SETUP.md](SETUP.md): environment variables, first run, deployment
+- [docs/DEVLR_PLAN.md](docs/DEVLR_PLAN.md): the product plan and roadmap
+- [docs/DESIGN.md](docs/DESIGN.md): the transactional email platform that lives in this repo
+  (a Postgres-backed queue with leases, backoff and provider failover)

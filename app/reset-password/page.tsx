@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/client";
 import { Button, Input, Label } from "@/components/ui";
-import { Wordmark } from "@/components/Navbar";
+import { Wordmark } from "@/components/ui";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function ResetPasswordPage() {
@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      router.push("/dashboard");
+      router.push("/app");
     } catch (err: any) {
       setError(err?.message ?? "Could not update your password. Please try again.");
     } finally {

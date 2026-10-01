@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/client";
 import { Button, Input, Label } from "@/components/ui";
-import { Wordmark } from "@/components/Navbar";
+import { Wordmark } from "@/components/ui";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function ForgotPasswordPage() {

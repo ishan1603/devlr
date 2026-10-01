@@ -5,7 +5,7 @@ import { validateSendRequest } from "@/lib/platform/validate";
 
 const valid = {
   to: "reader@example.com",
-  from: "briefing@sendlr.dev",
+  from: "briefing@devlr.dev",
   subject: "Your Tuesday briefing",
   text: "Three stories today.",
 };

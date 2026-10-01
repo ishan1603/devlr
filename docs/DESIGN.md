@@ -1,11 +1,15 @@
-# Sendlr Delivery Platform — design
+# Devlr delivery platform: design
 
 A multi-tenant transactional email API with a durable delivery queue.
 
 Callers hand it a message over HTTP and get an immediate acknowledgement; the
-platform owns everything after that — retries, provider failover, suppression,
-and the record of what actually happened. The newsletter product in this same
-repo is one client of the API rather than the thing the system is for.
+platform owns everything after that: retries, provider failover, suppression,
+and the record of what actually happened.
+
+It shares a repo with Devlr but is separate infrastructure. Devlr's own issues
+currently go out through a simple mailer (`lib/email/send.ts`), because the
+platform needs a long-lived worker process and there is no free host for one.
+When Devlr outgrows a single SMTP account, this is what it moves onto.
 
 ---
 

@@ -17,6 +17,11 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
 
+// A counter rather than a timestamp: two toasts raised in the same millisecond
+// would otherwise share a key.
+let sequence = 0;
+const nextId = () => `toast-${++sequence}`;
+
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (context === undefined) {
@@ -41,7 +46,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const showNotification = (
     notification: Omit<NotificationProps, "id" | "onClose">
   ) => {
-    const id = Date.now().toString();
+    const id = nextId();
     const newNotification = {
       ...notification,
       id,

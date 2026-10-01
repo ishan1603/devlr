@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
 
   // Only same-origin paths, so a crafted link cannot bounce someone off-site.
-  const requested = searchParams.get("next") ?? "/dashboard";
-  const next = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/dashboard";
+  const requested = searchParams.get("next") ?? "/app";
+  const next = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/app";
 
   const supabase = await createClient();
 

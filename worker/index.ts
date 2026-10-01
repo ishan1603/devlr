@@ -53,7 +53,7 @@ const WORKER_ID = `${hostname()}-${process.pid}-${randomBytes(3).toString("hex")
 // ---------------------------------------------------------------------------
 
 let running = true;
-let inFlight = new Set<number>();
+const inFlight = new Set<number>();
 
 const stats = {
   claimed: 0,

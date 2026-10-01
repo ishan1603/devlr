@@ -1,72 +1,77 @@
-import type { Metadata } from "next";
-import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-geist",
   display: "swap",
 });
 
-// Used only for display type — the masthead and page headings. Keeps the
-// editorial character without costing legibility in body copy.
-const instrumentSerif = Instrument_Serif({
-  weight: "400",
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-serif-display",
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono-ui",
-  display: "swap",
-});
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://devlr.vercel.app";
 
 export const metadata: Metadata = {
-  title: "Sendlr | AI newsletters on your schedule",
+  metadataBase: new URL(APP_URL),
+  title: {
+    default: "Devlr. The developer inbox",
+    template: "%s | Devlr",
+  },
   description:
-    "Pick your topics. Sendlr reads the news and writes you a briefing on the schedule you choose.",
+    "Dev news for your stack, end-of-life warnings for what you run, and the repos worth knowing about. One email, on your schedule.",
+  openGraph: {
+    title: "Devlr. The developer inbox",
+    description:
+      "Dev news for your stack, end-of-life warnings for what you run, and the repos worth knowing about. One email, on your schedule.",
+    type: "website",
+    siteName: "Devlr",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: light)", color: "#fafaf7" },
+  ],
+  width: "device-width",
+  initialScale: 1,
 };
 
 /**
- * Applied before first paint so the page never flashes light then swaps to
- * dark. Kept inline and dependency-free for the same reason — anything loaded
- * as a module would run too late.
+ * Applied before first paint so the page never flashes one theme and swaps to
+ * the other. Kept inline and dependency-free for the same reason: anything
+ * loaded as a module would run too late.
+ *
+ * Dark is the default. Light is used only when the visitor has chosen it.
  */
 const themeScript = `
 (function () {
   try {
-    var stored = localStorage.getItem("theme");
-    var system = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (stored === "dark" || (stored !== "light" && system)) {
+    if (localStorage.getItem("theme") !== "light") {
       document.documentElement.classList.add("dark");
     }
-  } catch (e) {}
+  } catch (e) {
+    document.documentElement.classList.add("dark");
+  }
 })();
 `;
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="en" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh bg-bg text-fg antialiased">
         <NotificationProvider>
-          <AuthProvider>
-            <Navbar />
-            <main>{children}</main>
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
         </NotificationProvider>
       </body>
     </html>
