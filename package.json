@@ -16,7 +16,9 @@
     "db:status": "tsx --env-file=.env.local scripts/db-migrate.ts --status",
     "sources:check": "tsx scripts/check-sources.ts",
     "email:preview": "tsx --env-file=.env.local scripts/preview-issue.ts",
+    "email:sample": "tsx scripts/preview-sample.ts",
     "ai:check": "tsx --env-file=.env.local scripts/check-models.ts",
+    "guard:scan": "tsx --env-file-if-exists=.env.local scripts/scan-repo.ts",
     "worker": "tsx --env-file=.env.local worker/index.ts",
     "platform:key": "tsx --env-file=.env.local scripts/create-api-key.ts"
   },
@@ -24,7 +26,6 @@
     "@langchain/core": "^1.2.14",
     "@langchain/langgraph": "^1.4.18",
     "@mozilla/readability": "^0.6.0",
-    "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",

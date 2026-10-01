@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Body, Head, Html, Preview } from "@react-email/components";
 import { formatStars } from "@/lib/modules/pulse";
 import type {
   EolSection,
@@ -22,6 +21,11 @@ import type {
  * Colours live in this file, not in globals.css, because an email cannot read
  * CSS variables. The baseline is light; the <style> block upgrades clients
  * that honour `prefers-color-scheme` to a dark version.
+ *
+ * The document shell (html, head, body, preheader) is written out below
+ * rather than imported. It is four elements, and the package that used to
+ * supply them was deprecated on npm, which Repo Guard's first scan of this
+ * very repo is what pointed out.
  */
 
 export interface IssueEmailProps {
@@ -91,6 +95,25 @@ function formatDate(iso: string) {
     year: "numeric",
     timeZone: "UTC",
   });
+}
+
+const PREHEADER_LENGTH = 150;
+/**
+ * Invisible filler after the preheader: a no-break space and six zero-width
+ * marks. Without it a mail client pads the inbox preview line with whatever
+ * comes next in the body, which here would be the masthead's date and command.
+ */
+const PREHEADER_FILL = String.fromCharCode(0xa0, 0x200c, 0x200b, 0x200d, 0x200e, 0x200f, 0xfeff);
+
+/** The line an inbox shows beside the subject. Hidden in the message itself. */
+function Preheader({ text }: { text: string }) {
+  const shown = text.slice(0, PREHEADER_LENGTH);
+  return (
+    <div style={{ display: "none", overflow: "hidden", lineHeight: "1px", opacity: 0, maxHeight: 0, maxWidth: 0 }}>
+      {shown}
+      <div>{PREHEADER_FILL.repeat(PREHEADER_LENGTH - shown.length)}</div>
+    </div>
+  );
 }
 
 function Table({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -328,14 +351,18 @@ export default function IssueEmail({ issue, links, recipient }: IssueEmailProps)
   const isoDay = issue.date.slice(0, 10);
 
   return (
-    <Html lang="en">
-      <Head>
+    <html lang="en" dir="ltr">
+      {/* eslint-disable-next-line @next/next/no-head-element -- an email document, not a Next.js page */}
+      <head>
+        <meta content="text/html; charset=UTF-8" httpEquiv="Content-Type" />
+        {/* Stops Apple Mail from rescaling the layout on small screens. */}
+        <meta name="x-apple-disable-message-reformatting" />
         <meta name="color-scheme" content="light dark" />
         <meta name="supported-color-schemes" content="light dark" />
         <style>{DARK_CSS}</style>
-      </Head>
-      <Preview>{issue.preheader}</Preview>
-      <Body className="d-page" style={{ margin: 0, padding: 0, background: C.page }}>
+      </head>
+      <body className="d-page" style={{ margin: 0, padding: 0, background: C.page }}>
+        <Preheader text={issue.preheader} />
         <Table style={{ background: C.page }}>
           <tr>
             <td className="d-page" align="center" style={{ padding: "28px 12px", background: C.page }}>
@@ -446,7 +473,7 @@ export default function IssueEmail({ issue, links, recipient }: IssueEmailProps)
             </td>
           </tr>
         </Table>
-      </Body>
-    </Html>
+      </body>
+    </html>
   );
 }
