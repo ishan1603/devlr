@@ -18,7 +18,7 @@ export default async function CompaniesPage() {
   const { data: followed } = await supabase
     .from("user_companies")
     .select("company_id")
-    .eq("user_id", me.id);
+    .eq("user_id", me.profile.user_id);
 
   const followedSet = new Set(followed?.map((f) => f.company_id) || []);
 

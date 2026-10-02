@@ -16,7 +16,7 @@ export const generateCompanyUpdates = inngest.createFunction(
     const supabase = createAdminClient();
 
     // 1. Fetch verified companies
-    const { data: companies } = await step.run("fetch-companies", async () => {
+    const companies = await step.run("fetch-companies", async () => {
       const { data } = await supabase.from("companies").select("*").eq("verified", true);
       return data || [];
     });

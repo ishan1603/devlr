@@ -204,7 +204,10 @@ export function countItems(sections: Section[]): number {
   for (const s of sections) {
     if (s.type === "stories") n += s.items.length;
     else if (s.type === "repos") n += s.repos.length;
-    else n += s.entries.length;
+    else if (s.type === "eol" || s.type === "guard") n += s.entries.length;
+    else if (s.type === "learn") n += 1;
+    else if (s.type === "company_radar") n += s.companies.reduce((acc, c) => acc + c.updates.length, 0);
+    else if (s.type === "release_radar") n += s.releases.length;
   }
   return n;
 }

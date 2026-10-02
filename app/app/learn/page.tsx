@@ -19,7 +19,7 @@ export default async function LearnPage() {
         topic:learn_topics ( title, format, difficulty )
       )
     `)
-    .eq("user_id", me.id)
+    .eq("user_id", me.profile.user_id)
     .order("sent_at", { ascending: false })
     .limit(5);
 
@@ -31,7 +31,7 @@ export default async function LearnPage() {
       <header className="space-y-2">
         <h1 className="text-2xl tracking-tight">Learn</h1>
         <p className="text-subtle">
-          A daily question to test your knowledge on {me.level || "intermediate"} topics.
+          A daily question to test your knowledge on {me.profile.level || "intermediate"} topics.
         </p>
       </header>
 
@@ -45,14 +45,14 @@ export default async function LearnPage() {
           <div className="surface border border-accent/20 rounded-lg p-6 space-y-4">
             <div className="flex items-center gap-2 text-sm text-accent">
               <span className="px-2 py-0.5 rounded-full bg-accent-soft">
-                {active.item?.topic?.difficulty}
+                {((active.item as any)?.topic as any)?.difficulty}
               </span>
-              <span>{active.item?.topic?.format}</span>
+              <span>{((active.item as any)?.topic as any)?.format}</span>
             </div>
             
-            <h2 className="text-xl font-medium">{active.item?.topic?.title}</h2>
+            <h2 className="text-xl font-medium">{((active.item as any)?.topic as any)?.title}</h2>
             <p className="text-muted leading-relaxed whitespace-pre-wrap">
-              {active.item?.question}
+              {(active.item as any)?.question}
             </p>
 
             <div className="pt-4 border-t border-white/5 flex items-center justify-between">
@@ -60,7 +60,7 @@ export default async function LearnPage() {
                 <span className="text-success text-sm">You've completed this!</span>
               ) : (
                 <Link
-                  href={`/learn/${active.item?.id}`}
+                  href={`/learn/${(active.item as any)?.id}`}
                   className="px-4 py-2 bg-accent text-on-accent rounded-md text-sm font-medium hover:bg-accent-fill transition-colors"
                 >
                   Reveal Answer
@@ -78,11 +78,11 @@ export default async function LearnPage() {
             {history.map((h, i) => (
               <Link 
                 key={i} 
-                href={`/learn/${h.item?.id}`}
+                href={`/learn/${(h.item as any)?.id}`}
                 className="block p-4 surface-sunken rounded-lg hover:surface transition-colors border border-transparent hover:border-white/5"
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-muted">{h.item?.topic?.title}</span>
+                  <span className="font-medium text-muted">{((h.item as any)?.topic as any)?.title}</span>
                   {h.revealed_at && <span className="text-xs text-subtle">Completed</span>}
                 </div>
               </Link>

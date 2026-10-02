@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = { title: "Learn (Demo)" };
 
 export default async function DemoLearnRevealPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: _id } = await params;
   
   const item = {
     topic: { title: "Rate Limiting", difficulty: "advanced", format: "system_design" },

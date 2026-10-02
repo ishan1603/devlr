@@ -61,7 +61,7 @@ export function renderIssueText({ issue, links }: Pick<IssueEmailProps, "issue" 
       }
       if (section.also.length) lines.push(`Also needs attention: ${section.also.join(", ")}.`);
       lines.push(`Every finding: ${section.url}`, "");
-    } else {
+    } else if (section.type === "eol") {
       for (const entry of section.entries) {
         lines.push(
           `${entry.product} ${entry.cycle}: end of life ${entry.eolDate} (${eolPhrase(entry.daysLeft)})` +
@@ -70,6 +70,18 @@ export function renderIssueText({ issue, links }: Pick<IssueEmailProps, "issue" 
         if (entry.link) lines.push(entry.link);
         lines.push("");
       }
+    } else if (section.type === "learn") {
+      lines.push(`Question: ${section.title}`, section.url, "");
+    } else if (section.type === "company_radar") {
+      for (const company of section.companies) {
+        lines.push(`${company.name}: ${company.updates.length} updates`);
+      }
+      lines.push("");
+    } else if (section.type === "release_radar") {
+      for (const release of section.releases) {
+        lines.push(`${release.package} @ ${release.version} ${release.breaking ? "(BREAKING)" : ""}`, release.url);
+      }
+      lines.push("");
     }
   }
 

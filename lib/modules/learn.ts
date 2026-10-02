@@ -53,7 +53,7 @@ const graphState = {
 // Nodes
 // ---------------------------------------------------------------------------
 
-async function authorNode(state: LearnGraphState): Promise<Partial<LearnGraphState>> {
+async function authorNode(state: LearnGraphState) {
   const prompt = `Write a ${state.difficulty} ${state.format} question about ${state.topic} for a ${state.domain} developer.
   
 Previous feedback to address:
@@ -80,7 +80,7 @@ No invented numbers or fictional APIs. Use Mermaid for architecture diagrams if 
   return { draft: result.data, revisions: 1 };
 }
 
-async function reviewerNode(state: LearnGraphState): Promise<Partial<LearnGraphState>> {
+async function reviewerNode(state: LearnGraphState) {
   if (!state.draft) throw new Error("No draft to review.");
 
   const prompt = `Topic: ${state.topic} (${state.difficulty} ${state.format})
@@ -121,11 +121,11 @@ function shouldRevise(state: LearnGraphState) {
 // Graph
 // ---------------------------------------------------------------------------
 
-export const learnGraph = new StateGraph<LearnGraphState>({ channels: graphState })
-  .addNode("author", authorNode)
-  .addNode("reviewer", reviewerNode)
+export const learnGraph = new StateGraph<LearnGraphState>({ channels: graphState as any })
+  .addNode("author", authorNode as any)
+  .addNode("reviewer", reviewerNode as any)
   .addEdge("author", "reviewer")
-  .addConditionalEdges("reviewer", shouldRevise)
+  .addConditionalEdges("reviewer", shouldRevise as any)
   .setEntryPoint("author")
   .compile();
 
@@ -172,7 +172,7 @@ export async function assembleLearn(profile: ComposeProfile): Promise<ModuleResu
     type: "learn",
     module: "learn",
     label: "learn",
-    title: item.topic?.title || "Daily Question",
+    title: (item.topic as any)?.title || "Daily Question",
     id: item.id,
     question: item.question,
     hints: item.hints as string[],

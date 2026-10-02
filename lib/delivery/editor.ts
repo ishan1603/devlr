@@ -114,12 +114,22 @@ function briefFor(input: EditorInput): string {
       for (const entry of section.entries) {
         lines.push(`${++n}. In ${entry.repo}: ${entry.title}\n   ${entry.action}`);
       }
-    } else {
+    } else if (section.type === "eol") {
       for (const entry of section.entries) {
         lines.push(
           `${++n}. ${entry.product} ${entry.cycle} reaches end of life on ${entry.eolDate} ` +
             `(${entry.daysLeft} days from now)`
         );
+      }
+    } else if (section.type === "learn") {
+      lines.push(`${++n}. Learn question: ${section.title}`);
+    } else if (section.type === "company_radar") {
+      for (const company of section.companies) {
+        lines.push(`${++n}. Company update from ${company.name}: ${company.updates.length} new items`);
+      }
+    } else if (section.type === "release_radar") {
+      for (const release of section.releases) {
+        lines.push(`${++n}. Release: ${release.package} @ ${release.version}`);
       }
     }
   }
@@ -143,7 +153,10 @@ function vocabulary(sections: Section[]): Set<string> {
     if (section.type === "stories") section.items.forEach((i) => add(`${i.title} ${i.summary} ${i.source}`));
     else if (section.type === "repos") section.repos.forEach((r) => add(`${r.fullName.replace("/", " ")} ${r.description}`));
     else if (section.type === "guard") section.entries.forEach((e) => add(`${e.repo.replace("/", " ")} ${e.title} ${e.action}`));
-    else section.entries.forEach((e) => add(`${e.product} ${e.cycle} end of life`));
+    else if (section.type === "eol") section.entries.forEach((e) => add(`${e.product} ${e.cycle} end of life`));
+    else if (section.type === "learn") add(`${section.title} ${section.question}`);
+    else if (section.type === "company_radar") section.companies.forEach(c => add(`${c.name} ${c.updates.map(u => u.title).join(" ")}`));
+    else if (section.type === "release_radar") section.releases.forEach(r => add(`${r.package} ${r.version} ${r.notes}`));
   }
   return words;
 }
@@ -193,11 +206,17 @@ export function inventedNumbers(text: string, sections: Section[]): string[] {
       section.repos.forEach((r) => add(`${r.fullName} ${r.description} ${r.stars}`));
     } else if (section.type === "guard") {
       section.entries.forEach((e) => add(`${e.repo} ${e.title} ${e.action} ${e.command ?? ""} ${e.meta.join(" ")}`));
-    } else {
+    } else if (section.type === "eol") {
       section.entries.forEach((e) => add(`${e.product} ${e.cycle} ${e.eolDate} ${e.daysLeft} ${e.latest ?? ""}`));
+    } else if (section.type === "learn") {
+      add(section.title);
+    } else if (section.type === "company_radar") {
+      section.companies.forEach(c => add(`${c.name}`));
+    } else if (section.type === "release_radar") {
+      section.releases.forEach(r => add(`${r.package} ${r.version}`));
     }
     // Counting what is in the issue is fine: "three releases", "8 stories".
-    add(section.type === "stories" ? section.items.length : section.type === "repos" ? section.repos.length : section.entries.length);
+    add(section.type === "stories" ? section.items.length : section.type === "repos" ? section.repos.length : section.type === "company_radar" ? section.companies.length : section.type === "release_radar" ? section.releases.length : section.type === "learn" ? 1 : section.entries.length);
   }
   add(countItems(sections));
 

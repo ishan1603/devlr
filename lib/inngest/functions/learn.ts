@@ -35,7 +35,7 @@ export const generateLearnQuestions = inngest.createFunction(
             draft: null,
             review: null,
             revisions: 0,
-          });
+          } as any) as any;
 
           if (finalState.review?.pass && finalState.draft) {
             // Save to DB

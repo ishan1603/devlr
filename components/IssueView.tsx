@@ -192,34 +192,84 @@ function renderSection(section: Section, index: number, sections: Section[]) {
     );
   }
 
-  return (
-    <section key={key} className="mt-7">
-      <SectionLabel label={section.label} />
-      <ul className="mt-2 divide-y divide-line">
-        {section.entries.map((entry) => (
-          <li key={entry.ref} className="flex items-start justify-between gap-4 py-3">
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold">
-                {entry.product} {entry.cycle}
-              </p>
-              <p className="mt-0.5 font-mono text-[12px] text-subtle">
-                end of life {entry.eolDate}
-                {entry.latest ? `  ·  current is ${entry.latest}` : ""}
-              </p>
-            </div>
-            <span
-              className={cx(
-                "shrink-0 font-mono text-[12px] font-semibold",
-                entry.daysLeft <= 7 ? "text-danger" : entry.daysLeft <= 30 ? "text-warning" : "text-muted"
-              )}
-            >
-              {eolPhrase(entry.daysLeft)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+  if (section.type === "eol") {
+    return (
+      <section key={key} className="mt-7">
+        <SectionLabel label={section.label} />
+        <ul className="mt-2 divide-y divide-line">
+          {section.entries.map((entry) => (
+            <li key={entry.ref} className="flex items-start justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold">
+                  {entry.product} {entry.cycle}
+                </p>
+                <p className="mt-0.5 font-mono text-[12px] text-subtle">
+                  end of life {entry.eolDate}
+                  {entry.latest ? `  ·  current is ${entry.latest}` : ""}
+                </p>
+              </div>
+              <span
+                className={cx(
+                  "shrink-0 font-mono text-[12px] font-semibold",
+                  entry.daysLeft <= 7 ? "text-danger" : entry.daysLeft <= 30 ? "text-warning" : "text-muted"
+                )}
+              >
+                {eolPhrase(entry.daysLeft)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  if (section.type === "learn") {
+    return (
+      <section key={key} className="mt-7">
+        <SectionLabel label={section.label} />
+        <p className="mt-3 text-[15px]"><a href={section.url} className="hover:text-accent font-semibold">{section.title}</a></p>
+        <p className="text-muted text-[14px] mt-1">{section.question}</p>
+      </section>
+    );
+  }
+
+  if (section.type === "company_radar") {
+    return (
+      <section key={key} className="mt-7">
+        <SectionLabel label={section.label} />
+        <ul className="mt-3 space-y-4">
+          {section.companies.map(c => (
+            <li key={c.name}>
+              <div className="font-semibold">{c.name}</div>
+              <ul className="mt-1 space-y-1">
+                {c.updates.map((u, i) => (
+                  <li key={i} className="text-[14px]"><a href={u.url} className="hover:text-accent">{u.title}</a> <span className="text-subtle ml-2 uppercase text-[10px]">{u.kind}</span></li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  if (section.type === "release_radar") {
+    return (
+      <section key={key} className="mt-7">
+        <SectionLabel label={section.label} />
+        <ul className="mt-3 space-y-2">
+          {section.releases.map(r => (
+            <li key={`${r.package}-${r.version}`} className="text-[14px]">
+              <a href={r.url} className="font-mono font-semibold hover:text-accent">{r.package} @ {r.version}</a>
+              {r.breaking && <span className="ml-2 text-warning uppercase text-[10px]">Breaking</span>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
+
+  return null;
 }
 
 export default function IssueView({ issue, className }: { issue: Issue; className?: string }) {

@@ -33,9 +33,19 @@ function entryHtml(issue: Issue): string {
       // A feed is fetched and stored by whatever reader it is pasted into, so
       // it only ever says that there is something to look at.
       parts.push(`<li>There are findings about your repositories. <a href="${xml(section.url)}">Open Repo Guard</a></li>`);
-    } else {
+    } else if (section.type === "eol") {
       for (const entry of section.entries) {
         parts.push(`<li>${xml(entry.product)} ${xml(entry.cycle)}: end of life ${xml(entry.eolDate)}</li>`);
+      }
+    } else if (section.type === "learn") {
+      parts.push(`<li>Question: <a href="${xml(section.url)}">${xml(section.title)}</a></li>`);
+    } else if (section.type === "company_radar") {
+      for (const company of section.companies) {
+        parts.push(`<li>${xml(company.name)}: ${company.updates.length} updates</li>`);
+      }
+    } else if (section.type === "release_radar") {
+      for (const release of section.releases) {
+        parts.push(`<li><a href="${xml(release.url)}">${xml(release.package)}</a>: ${xml(release.version)}</li>`);
       }
     }
     parts.push("</ul>");

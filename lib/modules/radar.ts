@@ -63,7 +63,7 @@ export async function assembleCompanyRadar(profile: ComposeProfile): Promise<Mod
   return { sections: [section], seen };
 }
 
-export async function assembleReleaseRadar(profile: ComposeProfile): Promise<ModuleResult> {
+export async function assembleReleaseRadar(_profile: ComposeProfile): Promise<ModuleResult> {
   const supabase = createAdminClient();
 
   // For a real implementation, we would query the user's `repositories` or `user_stars`

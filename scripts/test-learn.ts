@@ -18,7 +18,7 @@ async function main() {
   };
 
   try {
-    const finalState = await learnGraph.invoke(initialState);
+    const finalState = (await learnGraph.invoke(initialState as any)) as any;
     console.log("\n=== Final Draft ===");
     console.log(JSON.stringify(finalState.draft, null, 2));
     
