@@ -1,11 +1,13 @@
 import * as React from "react";
 import { formatStars } from "@/lib/modules/pulse";
 import type {
+  CompanySection,
   EolSection,
   GuardEntry,
   GuardSection,
   Issue,
   LearnSection,
+  ReleaseSection,
   ReposSection,
   Section,
   StoriesSection,
@@ -503,6 +505,87 @@ function Guard({ section }: { section: GuardSection }) {
   );
 }
 
+function Company({ section }: { section: CompanySection }) {
+  return (
+    <>
+      <SectionLabel label={section.label} />
+      {section.companies.map((company, cIdx) => (
+        <tr key={company.name}>
+          <td className="m-pad" style={{ padding: "14px 36px 0 36px", paddingBottom: cIdx === section.companies.length - 1 ? 0 : 12 }}>
+            <div
+              className="d-ink"
+              style={{ fontFamily: SANS, fontSize: 17, lineHeight: "24px", fontWeight: 600, color: C.ink, paddingBottom: 6 }}
+            >
+              {company.name}
+            </div>
+            
+            <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} border={0}>
+              <tbody>
+                {company.updates.map((update, uIdx) => (
+                  <tr key={uIdx}>
+                    <td style={{ padding: "4px 0", verticalAlign: "top", width: "70px" }}>
+                      <span className="d-muted" style={{ fontFamily: MONO, fontSize: 11, fontWeight: 600, color: C.muted, textTransform: "uppercase" }}>
+                        {update.kind}
+                      </span>
+                    </td>
+                    <td style={{ padding: "4px 0", verticalAlign: "top" }}>
+                      <a href={update.url} className="d-ink" style={{ fontFamily: SANS, fontSize: 15, lineHeight: "21px", color: C.ink, textDecoration: "none" }}>
+                        {update.title}
+                      </a>
+                      {update.summary && (
+                        <div className="d-body" style={{ fontFamily: SANS, fontSize: 14, lineHeight: "20px", color: C.body, paddingTop: 2 }}>
+                          {update.summary}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+}
+
+function Release({ section }: { section: ReleaseSection }) {
+  return (
+    <>
+      <SectionLabel label={section.label} />
+      <tr>
+        <td className="m-pad" style={{ padding: "14px 36px 0 36px" }}>
+          <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} border={0}>
+            <tbody>
+              {section.releases.map((release, i) => (
+                <tr key={`${release.package}-${release.version}`}>
+                  <td style={{ padding: "6px 0", borderBottom: i === section.releases.length - 1 ? "none" : `1px solid ${C.line}` }}>
+                    <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 600 }}>
+                      <a href={release.url} className="d-ink" style={{ color: C.ink, textDecoration: "none" }}>
+                        {release.package} <span style={{ color: C.muted }}>@{release.version}</span>
+                      </a>
+                      {release.breaking && (
+                        <span className="d-warning" style={{ color: C.warning, marginLeft: 8, fontSize: 11, textTransform: "uppercase" }}>
+                          Breaking
+                        </span>
+                      )}
+                    </div>
+                    {release.notes && (
+                      <div className="d-body" style={{ fontFamily: SANS, fontSize: 14, lineHeight: "20px", color: C.body, paddingTop: 4 }}>
+                        {release.notes}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </>
+  );
+}
+
 function Learn({ section }: { section: LearnSection }) {
   return (
     <>
@@ -576,6 +659,10 @@ function renderSection(section: Section, index: number, sections: Section[]) {
       return <Guard key={key} section={section} />;
     case "learn":
       return <Learn key={key} section={section} />;
+    case "company_radar":
+      return <Company key={key} section={section} />;
+    case "release_radar":
+      return <Release key={key} section={section} />;
   }
 }
 

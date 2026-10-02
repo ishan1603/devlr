@@ -8,6 +8,7 @@ import {
 import { scheduleIssues, sendIssue } from "@/lib/inngest/functions/delivery";
 import { scanPushedRepo, scanRepo, sendGuardAlert, sweepRepos } from "@/lib/inngest/functions/guard";
 import { generateLearnQuestions } from "@/lib/inngest/functions/learn";
+import { generateCompanyUpdates, generateReleaseUpdates } from "@/lib/inngest/functions/radar";
 
 export const functions = [
   ingestContent,
@@ -22,4 +23,6 @@ export const functions = [
   sweepRepos,
   sendGuardAlert,
   generateLearnQuestions,
+  generateCompanyUpdates,
+  generateReleaseUpdates,
 ];

@@ -8,6 +8,7 @@ import { guardCopy } from "@/lib/guard/news";
 import { assembleGuard } from "@/lib/modules/guard";
 import { assemblePulse } from "@/lib/modules/pulse";
 import { assembleLearn } from "@/lib/modules/learn";
+import { assembleCompanyRadar, assembleReleaseRadar } from "@/lib/modules/radar";
 
 /**
  * Composition: several modules, one email.
@@ -97,7 +98,10 @@ async function runModule(
       return assembleGuard(profile);
     case "learn":
       return assembleLearn(profile);
-    // Release Radar and Company Radar plug in here.
+    case "company_radar":
+      return assembleCompanyRadar(profile);
+    case "release_radar":
+      return assembleReleaseRadar(profile);
     default:
       return { sections: [], seen: [] };
   }

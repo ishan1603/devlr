@@ -139,7 +139,41 @@ export interface LearnSection {
   url: string;
 }
 
-export type Section = StoriesSection | ReposSection | EolSection | GuardSection | LearnSection;
+export interface CompanyUpdate {
+  kind: "shipped" | "wrote" | "news" | "incident";
+  title: string;
+  url: string;
+  summary?: string;
+}
+
+export interface CompanySection {
+  type: "company_radar";
+  module: Module;
+  label: string;
+  title: string;
+  companies: {
+    name: string;
+    updates: CompanyUpdate[];
+  }[];
+}
+
+export interface ReleaseItem {
+  package: string;
+  version: string;
+  breaking: boolean;
+  notes: string;
+  url: string;
+}
+
+export interface ReleaseSection {
+  type: "release_radar";
+  module: Module;
+  label: string;
+  title: string;
+  releases: ReleaseItem[];
+}
+
+export type Section = StoriesSection | ReposSection | EolSection | GuardSection | LearnSection | CompanySection | ReleaseSection;
 
 export interface Issue {
   subject: string;
