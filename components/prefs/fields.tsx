@@ -328,6 +328,7 @@ function ModuleRow({
               No schedule of its own. It is added to an issue when there is something to report.
             </p>
           )}
+          {meta.note && <p className="mt-2 text-[13px] text-muted">{meta.note}</p>}
         </div>
       )}
     </div>

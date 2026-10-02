@@ -1,4 +1,4 @@
-import { cleanProse } from "@/lib/ai/style";
+import { cleanProse, stripEmoji } from "@/lib/ai/style";
 import { fixCommand } from "@/lib/guard/fix";
 import { cveOf, deprecationKey, intelFor, type Deprecation } from "@/lib/guard/intel";
 import { dependencyKey } from "@/lib/guard/osv";
@@ -67,8 +67,15 @@ export function shorten(text: string, max: number): string {
   return `${cut.slice(0, space > max * 0.6 ? space : max).replace(/[,;:.\s]+$/, "")}...`;
 }
 
+/**
+ * Text from an advisory database or a maintainer, made safe to put in an
+ * email. The words are theirs and are not rewritten, but the house rules on
+ * punctuation still apply to everything that reaches an inbox.
+ */
+const tidy = (text: string) => cleanProse(stripEmoji(text.replace(/\s+/g, " ")));
+
 function sentence(text: string): string {
-  const clean = cleanProse(text.replace(/\s+/g, " "));
+  const clean = tidy(text);
   if (!clean) return "";
   return /[.!?]$/.test(clean) ? clean : `${clean}.`;
 }
@@ -157,7 +164,7 @@ export function buildFindings(input: FindingsInput): Finding[] {
       epss: intel.epss,
       title: advisory.malicious
         ? `${dependency.name} ${dependency.version} is a known malicious package`
-        : `${dependency.name} ${dependency.version}: ${shorten(advisory.summary.replace(/[.\s]+$/, ""), 110)}`,
+        : `${dependency.name} ${dependency.version}: ${shorten(tidy(advisory.summary).replace(/[.\s]+$/, ""), 110)}`,
       summary: sentence(advisory.summary) + importCaveat(advisory.imports?.[pkgKey]),
       imports: advisory.imports?.[pkgKey],
       fixedIn: fixedIn ?? undefined,

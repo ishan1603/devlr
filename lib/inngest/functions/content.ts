@@ -136,10 +136,17 @@ export const refreshLifecycles = inngest.createFunction(
 /** Keeps the database inside the free tier. See prune_old_data in the schema. */
 export const pruneData = inngest.createFunction(
   { id: "maintenance-prune", triggers: [{ cron: "15 3 * * *" }], retries: 1 },
-  async ({ step }) =>
-    step.run("prune", async () => {
+  async ({ step }) => {
+    const content = await step.run("prune", async () => {
       const { data, error } = await createAdminClient().rpc("prune_old_data", { p_content_days: 60 });
       if (error) throw new Error(`Prune failed: ${error.message}`);
       return data;
-    })
+    });
+    const guard = await step.run("prune-guard", async () => {
+      const { data, error } = await createAdminClient().rpc("prune_guard_data");
+      if (error) throw new Error(`Repo Guard prune failed: ${error.message}`);
+      return data;
+    });
+    return { content, guard };
+  }
 );

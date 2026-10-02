@@ -24,6 +24,10 @@ const PAGES = [
   ["issues", "/demo/app/issues"],
   ["settings", "/demo/app/settings"],
   ["email", "/demo/email"],
+  ["repos", "/demo/app/repos"],
+  ["repo", "/demo/app/repos/demo"],
+  ["email-guard", "/demo/email?view=guard"],
+  ["email-alert", "/demo/email?view=alert"],
 ];
 
 const VIEWPORTS = [

@@ -35,7 +35,7 @@ export const scheduleIssues = inngest.createFunction(
   async ({ step }) => {
     const now = new Date();
 
-    const { profiles, subscriptions } = await step.run("load-active-readers", async () => {
+    const { profiles, subscriptions, guardNews } = await step.run("load-active-readers", async () => {
       const supabase = createAdminClient();
 
       // Paged, and ordered by primary key so the pages cannot overlap. A plain
@@ -59,8 +59,22 @@ export const scheduleIssues = inngest.createFunction(
           .range(from, to)
       );
 
-      return { profiles, subscriptions };
+      // Readers with a Repo Guard finding they have not been told about. For
+      // everyone else that module has nothing to trigger a send with today.
+      const guardNews = await selectAll<{ user_id: string }>(
+        (from, to) =>
+          supabase.rpc("guard_pending_users").order("user_id").range(from, to) as unknown as PromiseLike<{
+            data: { user_id: string }[] | null;
+            error: { message: string } | null;
+          }>
+      );
+
+      return { profiles, subscriptions, guardNews: guardNews.map((row) => row.user_id) };
     });
+
+    const hasGuardNews = new Set(guardNews);
+    const guardOnly: ReadonlySet<Module> = new Set<Module>(["repo_guard"]);
+    const nothing: ReadonlySet<Module> = new Set<Module>();
 
     const subsByUser = new Map<string, ScheduleSubscription[]>();
     for (const sub of subscriptions) {
@@ -70,7 +84,15 @@ export const scheduleIssues = inngest.createFunction(
     }
 
     const due = (profiles as ScheduleProfile[])
-      .map((profile) => ({ profile, verdict: evaluateDue(profile, subsByUser.get(profile.user_id) ?? [], now) }))
+      .map((profile) => ({
+        profile,
+        verdict: evaluateDue(
+          profile,
+          subsByUser.get(profile.user_id) ?? [],
+          now,
+          hasGuardNews.has(profile.user_id) ? guardOnly : nothing
+        ),
+      }))
       .filter((row) => row.verdict.due);
 
     if (due.length === 0) return { checked: profiles.length, dispatched: 0 };
@@ -186,6 +208,7 @@ export const sendIssue = inngest.createFunction(
           seen: composed.seen,
           modules: composed.contributing,
           advanceSchedule: kind === "scheduled",
+          guardFindingIds: composed.guardFindingIds,
         })
       );
 

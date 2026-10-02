@@ -9,6 +9,10 @@ import sharp from "sharp";
  *
  *   node scripts/screenshot.mjs <url> <name> [--width 390] [--height 844] [--scale 2]
  *                               [--light] [--motion] [--slice 900] [--viewport]
+ *                               [--do "<javascript>"]
+ *
+ * --do runs a snippet in the page before the capture, for screens that are
+ * only reached by clicking: a later step of a flow, an opened disclosure.
  *
  * Drives an installed Chrome or Edge over the DevTools protocol, with no
  * dependency beyond Node itself. That matters for small screens: plain
@@ -27,6 +31,10 @@ const flag = (key) => args.includes(`--${key}`);
 const option = (key, fallback) => {
   const i = args.indexOf(`--${key}`);
   return i !== -1 && args[i + 1] ? Number(args[i + 1]) : fallback;
+};
+const text = (key) => {
+  const i = args.indexOf(`--${key}`);
+  return i !== -1 ? args[i + 1] : undefined;
 };
 
 if (!url || !name) {
@@ -167,6 +175,14 @@ try {
   // Idle callbacks, the canvas's first frame, and client-side data fetches.
   await sleep(option("wait", 1200));
 
+  // Then whatever the caller wants done first, and time for it to settle.
+  const script = text("do");
+  if (script) {
+    const ran = await page("Runtime.evaluate", { expression: `(async () => { ${script} })()`, awaitPromise: true });
+    if (ran.exceptionDetails) console.error(`  --do failed: ${ran.exceptionDetails.exception?.description ?? ran.exceptionDetails.text}`);
+    await sleep(option("wait", 1200));
+  }
+
   // Text whose box ends beyond the right edge, and that is not inside
   // something that scrolls or clips on purpose (a marquee, a code block).
   const check = await page("Runtime.evaluate", {
@@ -249,6 +265,16 @@ try {
   writeFileSync(file, Buffer.from(shot.data, "base64"));
 
   console.log(`${name}: "${report.title}" ${width}x${fullHeight} css px -> ${file}`);
+  // A page with no viewport meta tag is laid out about 980px wide on a phone
+  // and scaled down to fit. Nothing overflows, so the checks below pass, and
+  // the text is a third of the size it should be. This went unnoticed in the
+  // email template for exactly that reason.
+  if (report.viewport > width + 1) {
+    exitCode = 1;
+    console.log(
+      `  LAID OUT TOO WIDE: the page is ${report.viewport}px wide on a ${width}px screen. It is missing <meta name="viewport">.`
+    );
+  }
   if (report.scrollWidth > report.viewport + 1) {
     exitCode = 1;
     console.log(`  PAGE SCROLLS SIDEWAYS: content is ${report.scrollWidth}px wide in a ${report.viewport}px viewport`);

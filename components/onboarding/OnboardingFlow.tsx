@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Send } from "lucide-react";
+import { GithubOutcome } from "@/components/app/repo-actions";
 import IssueView from "@/components/IssueView";
+import RepoStep from "@/components/onboarding/RepoStep";
 import {
   DomainPicker,
   LengthPicker,
@@ -26,6 +28,7 @@ import type { Me } from "@/lib/profile";
 const STEPS = [
   { id: "domains", title: "What do you build?", hint: `Pick up to ${MAX_DOMAINS}. This decides what counts as news for you.` },
   { id: "stack", title: "What's in your stack?", hint: "The more specific, the better the ranking. You can change this any time." },
+  { id: "repos", title: "Got code on GitHub?", hint: "Devlr reads its dependency manifests, never the source, and tells you when something in them needs fixing." },
   { id: "modules", title: "What do you want in your inbox?", hint: "Everything due on the same day arrives as one email." },
   { id: "schedule", title: "When should it arrive?", hint: "Your local time. Each module keeps the rhythm you just picked." },
   { id: "preview", title: "Here is your first issue", hint: "Built from what was published recently, for the choices you just made." },
@@ -86,10 +89,16 @@ function detectTimezone(): string {
 export default function OnboardingFlow({
   initial,
   doneHref = "/app",
+  githubOutcome,
+  githubConnectHref = "/api/github/connect",
 }: {
   initial: Me;
   /** Where to go once setup is finished. */
   doneHref?: string;
+  /** The `github` query parameter, when the reader has just come back from GitHub. */
+  githubOutcome?: string;
+  /** Where "Connect GitHub" goes. Null in the demo. */
+  githubConnectHref?: string | null;
 }) {
   const router = useRouter();
   const { showError, showSuccess } = useNotification();
@@ -174,6 +183,7 @@ export default function OnboardingFlow({
 
   return (
     <LazyMotion features={domAnimation}>
+      <GithubOutcome outcome={githubOutcome} />
       <div className="relative min-h-dvh">
         <div className="bg-grid mask-fade-b pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px]" />
 
@@ -232,6 +242,8 @@ export default function OnboardingFlow({
                 )}
 
                 {current.id === "stack" && <StackPicker value={stack} onChange={setStack} domains={domains} />}
+
+                {current.id === "repos" && <RepoStep connectHref={githubConnectHref} />}
 
                 {current.id === "modules" && (
                   <div className="space-y-8">

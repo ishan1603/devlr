@@ -9,7 +9,15 @@ import {
   type RepoMeta,
 } from "@/lib/guard/github";
 import { healthOf, type Health } from "@/lib/guard/health";
-import { fetchDeprecations, fetchEpss, fetchKev, type Deprecation, type Deprecations } from "@/lib/guard/intel";
+import {
+  deprecationCandidates,
+  deprecationKey,
+  fetchDeprecations,
+  fetchEpss,
+  fetchKev,
+  type Deprecation,
+  type Deprecations,
+} from "@/lib/guard/intel";
 import { buildInventory } from "@/lib/guard/inventory";
 import { fetchAdvisory, mergeAdvisories, queryVulnerabilities } from "@/lib/guard/osv";
 import { rollup, type PackageReport } from "@/lib/guard/rollup";
@@ -36,19 +44,29 @@ import type { Advisory, Finding, Inventory, RepoRef } from "@/lib/guard/types";
  * what to tell the reader.
  */
 
+/**
+ * What earlier scans already learned. Both are asked for by key, after the
+ * scan knows which keys it needs, so the caller never has to load a whole
+ * cache up front. Either may be left out, and either may fail: the scan then
+ * fetches from the source instead.
+ */
+export interface ScanCache {
+  /**
+   * Advisories by id. One is reused when OSV reports the same modification
+   * time for it, and fetched again when it has changed.
+   */
+  advisories?: (ids: string[]) => Promise<Map<string, Advisory>>;
+  /** Deprecation answers by deprecationKey, with null meaning "checked, not deprecated". */
+  deprecations?: (keys: string[]) => Promise<Map<string, Deprecation | null>>;
+}
+
 export interface AnalyzeOptions {
   now?: Date;
   /** Known lifecycle dates. When omitted they are fetched from endoflife.date. */
   lifecycles?: LifecycleDate[];
-  /**
-   * Advisories fetched on earlier scans, by id. One is reused when OSV reports
-   * the same modification time for it, and fetched again when it has changed.
-   */
-  knownAdvisories?: Map<string, Advisory>;
   /** A KEV set fetched earlier today. */
   kev?: Set<string>;
-  /** Deprecation answers from earlier scans, with null meaning "checked, not deprecated". */
-  knownDeprecations?: Map<string, Deprecation | null>;
+  cache?: ScanCache;
 }
 
 export interface Analysis {
@@ -150,13 +168,25 @@ export async function analyzeInventory(
   const now = options.now ?? new Date();
   const warnings: string[] = [];
 
+  /** For everything that enriches the report: it may fail, and the scan goes on. */
+  const soft = async <T>(label: string, task: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await task();
+    } catch (err) {
+      warnings.push(`${label} unavailable: ${err instanceof Error ? err.message : err}`);
+      return fallback;
+    }
+  };
+
   // -- Match ----------------------------------------------------------------
   // If OSV cannot be reached there is no report to give: "no vulnerabilities
   // found" would be a lie. This one is allowed to fail the scan.
   const matches = await queryVulnerabilities(inventory.dependencies);
   const ids = [...new Set([...matches.byDependency.values()].flat())];
 
-  const known = options.knownAdvisories ?? new Map<string, Advisory>();
+  const known = options.cache?.advisories
+    ? await soft("The advisory cache", () => options.cache!.advisories!(ids), new Map<string, Advisory>())
+    : new Map<string, Advisory>();
   const current = (id: string) => {
     const cached = known.get(id);
     const modified = matches.modified.get(id);
@@ -175,20 +205,19 @@ export async function analyzeInventory(
 
   // -- Context --------------------------------------------------------------
   // Each of these enriches the report. None of them is allowed to sink it.
-  const soft = async <T>(label: string, task: () => Promise<T>, fallback: T): Promise<T> => {
-    try {
-      return await task();
-    } catch (err) {
-      warnings.push(`${label} unavailable: ${err instanceof Error ? err.message : err}`);
-      return fallback;
-    }
-  };
+  const knownDeprecations = options.cache?.deprecations
+    ? await soft(
+        "The deprecation cache",
+        () => options.cache!.deprecations!(deprecationCandidates(inventory.dependencies).map(deprecationKey)),
+        new Map<string, Deprecation | null>()
+      )
+    : new Map<string, Deprecation | null>();
 
   const noDeprecations: Deprecations = { deprecated: new Map(), learned: new Map() };
   const [kev, epss, deprecations, lifecycles] = await Promise.all([
     options.kev ? Promise.resolve(options.kev) : soft("CISA's exploited-vulnerability list", fetchKev, new Set<string>()),
     soft("EPSS scores", () => fetchEpss(cvesIn(merged)), new Map<string, number>()),
-    soft("Deprecation data", () => fetchDeprecations(inventory.dependencies, options.knownDeprecations), noDeprecations),
+    soft("Deprecation data", () => fetchDeprecations(inventory.dependencies, knownDeprecations), noDeprecations),
     options.lifecycles
       ? Promise.resolve(options.lifecycles)
       : soft("Lifecycle dates", () => fetchLifecycles(runtimes), [] as LifecycleDate[]),

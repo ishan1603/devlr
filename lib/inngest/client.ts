@@ -19,7 +19,25 @@ export const inngest = new Inngest({
 export const EVENTS = {
   enrich: "content.enrich",
   sendIssue: "issue.send",
+  /** Scan one repository now. */
+  guardScan: "guard.scan",
+  /** A repository was pushed to. Scanned once the pushes stop. */
+  guardPush: "guard.push",
+  /** Scan everything that is due, without waiting for the next sweep. */
+  guardSweep: "guard.sweep",
+  /** A scan found something urgent for this reader. */
+  guardAlert: "guard.alert",
 } as const;
+
+export interface GuardScanEvent {
+  repoId: string;
+  /** Read the repository's files again even if nothing says they changed. */
+  force?: boolean;
+}
+
+export interface GuardAlertEvent {
+  userId: string;
+}
 
 export interface SendIssueEvent {
   userId: string;

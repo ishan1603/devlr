@@ -71,6 +71,16 @@ export const MODELS = {
     maxTokensPerDay: 2_000_000,
   } satisfies ModelSpec,
 
+  geminiPro: {
+    id: "gemini:pro",
+    provider: "gemini",
+    model: process.env.GEMINI_PRO_MODEL ?? "gemini-1.5-pro-latest",
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+    apiKeyEnv: "GEMINI_API_KEY",
+    maxRequestsPerDay: 1500,
+    maxTokensPerDay: 4_000_000,
+  } satisfies ModelSpec,
+
   cerebras: {
     id: "cerebras:default",
     provider: "cerebras",
@@ -102,11 +112,11 @@ export const MODELS = {
  * reviewer's.
  */
 export const ROUTES: Record<Task, ModelSpec[]> = {
-  summarize: [MODELS.geminiLite, MODELS.groqSmall, MODELS.groqAlt, MODELS.cerebras, MODELS.openrouter],
-  editor: [MODELS.groqLarge, MODELS.groqAlt, MODELS.geminiLite, MODELS.groqSmall, MODELS.cerebras],
-  author: [MODELS.groqLarge, MODELS.cerebras, MODELS.geminiLite, MODELS.groqAlt],
-  reviewer: [MODELS.geminiLite, MODELS.groqAlt, MODELS.groqSmall, MODELS.cerebras],
-  judge: [MODELS.groqSmall, MODELS.geminiLite, MODELS.groqAlt, MODELS.openrouter],
+  summarize: [MODELS.geminiLite, MODELS.geminiPro, MODELS.groqSmall, MODELS.groqAlt, MODELS.cerebras, MODELS.openrouter],
+  editor: [MODELS.geminiPro, MODELS.groqLarge, MODELS.groqAlt, MODELS.geminiLite, MODELS.groqSmall, MODELS.cerebras],
+  author: [MODELS.geminiPro, MODELS.groqLarge, MODELS.cerebras, MODELS.geminiLite, MODELS.groqAlt],
+  reviewer: [MODELS.geminiPro, MODELS.geminiLite, MODELS.groqAlt, MODELS.groqSmall, MODELS.cerebras],
+  judge: [MODELS.geminiPro, MODELS.groqSmall, MODELS.geminiLite, MODELS.groqAlt, MODELS.openrouter],
 };
 
 /** Models whose API key is actually present in this environment. */

@@ -47,9 +47,9 @@ const MODULES = [
   {
     icon: ShieldCheck,
     name: "Repo Guard",
-    live: false,
-    body: "Connect GitHub, pick repos. Get told when a dependency is vulnerable, hijacked or deprecated, with the command that fixes it.",
-    detail: "npm i lodash@4.17.21",
+    live: true,
+    body: "Pick repos on GitHub. When a dependency is vulnerable, hijacked, deprecated or past end of life, you get one entry per package with the upgrade that clears it. Your source is never read.",
+    detail: "$ npm install next@15.5.24",
   },
   {
     icon: GraduationCap,

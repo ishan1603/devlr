@@ -1,14 +1,19 @@
 import { mkdir, writeFile } from "node:fs/promises";
 
+import { demoGuardIssue } from "@/lib/demo-repos";
 import { renderIssueHtml, renderIssueText } from "@/lib/email/render";
 import { SAMPLE_ISSUE } from "@/lib/sample-issue";
 
 /**
- * Render the sample issue to .preview/sample.{html,txt}.
+ * Render sample issues to .preview/.
  *
  *   npm run email:sample
  *
- * No network, no keys, no database: the same fixed issue every time. This is
+ * Writes three: a regular issue (sample), one led by Repo Guard findings
+ * (sample-guard), and the alert that goes out on its own (sample-alert), each
+ * as .html and .txt.
+ *
+ * No network, no keys, no database: the same fixed issues every time. This is
  * the one to use when changing the template, because two runs can be diffed.
  * `npm run email:preview` builds a real issue from live sources instead.
  */
@@ -21,12 +26,20 @@ const links = {
 };
 
 async function main() {
-  const out = process.argv[2] ?? "sample";
   await mkdir(".preview", { recursive: true });
-  const html = await renderIssueHtml({ issue: SAMPLE_ISSUE, links, recipient: "you@example.com" });
-  await writeFile(`.preview/${out}.html`, html);
-  await writeFile(`.preview/${out}.txt`, renderIssueText({ issue: SAMPLE_ISSUE, links }));
-  console.log(`.preview/${out}.html  ${(html.length / 1024).toFixed(1)} KB`);
+
+  const samples = {
+    sample: SAMPLE_ISSUE,
+    "sample-guard": demoGuardIssue("bundled"),
+    "sample-alert": demoGuardIssue("alert"),
+  };
+
+  for (const [name, issue] of Object.entries(samples)) {
+    const html = await renderIssueHtml({ issue, links, recipient: "you@example.com" });
+    await writeFile(`.preview/${name}.html`, html);
+    await writeFile(`.preview/${name}.txt`, renderIssueText({ issue, links }));
+    console.log(`.preview/${name}.html  ${(html.length / 1024).toFixed(1)} KB  "${issue.subject}"`);
+  }
 }
 
 main().catch((err) => {

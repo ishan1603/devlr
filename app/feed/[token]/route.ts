@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { appUrl } from "@/lib/delivery/tokens";
-import type { Issue } from "@/lib/delivery/issue";
+import { shareable, type Issue } from "@/lib/delivery/issue";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -29,6 +29,10 @@ function entryHtml(issue: Issue): string {
       for (const repo of section.repos) {
         parts.push(`<li><a href="${xml(repo.url)}">${xml(repo.fullName)}</a>, ${repo.stars} stars<br>${xml(repo.description)}</li>`);
       }
+    } else if (section.type === "guard") {
+      // A feed is fetched and stored by whatever reader it is pasted into, so
+      // it only ever says that there is something to look at.
+      parts.push(`<li>There are findings about your repositories. <a href="${xml(section.url)}">Open Repo Guard</a></li>`);
     } else {
       for (const entry of section.entries) {
         parts.push(`<li>${xml(entry.product)} ${xml(entry.cycle)}: end of life ${xml(entry.eolDate)}</li>`);
@@ -60,7 +64,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ to
 
   const { data: deliveries } = await supabase
     .from("deliveries")
-    .select("web_token, subject, payload, sent_at")
+    .select("web_token, payload, sent_at")
     .eq("user_id", profile.user_id)
     .eq("status", "sent")
     .not("payload", "is", null)
@@ -73,11 +77,11 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ to
 
   const entries = (deliveries ?? [])
     .map((delivery) => {
-      const issue = delivery.payload as Issue;
+      const issue = shareable(delivery.payload as Issue);
       const link = `${base}/issue/${delivery.web_token}`;
       return [
         "<entry>",
-        `<title>${xml((delivery.subject as string) ?? issue.subject)}</title>`,
+        `<title>${xml(issue.subject)}</title>`,
         `<link href="${xml(link)}"/>`,
         `<id>${xml(link)}</id>`,
         `<updated>${xml(delivery.sent_at as string)}</updated>`,

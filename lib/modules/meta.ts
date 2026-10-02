@@ -6,7 +6,7 @@ import type { Frequency, Module } from "@/lib/delivery/schedule";
  */
 
 /** Modules a user can switch on today. The rest of the schema is ahead of the UI. */
-export const AVAILABLE_MODULES = ["digest", "dev_pulse", "eol_watch"] as const satisfies readonly Module[];
+export const AVAILABLE_MODULES = ["digest", "dev_pulse", "eol_watch", "repo_guard"] as const satisfies readonly Module[];
 export type AvailableModule = (typeof AVAILABLE_MODULES)[number];
 
 export function isAvailable(value: Module): value is AvailableModule {
@@ -26,6 +26,8 @@ export interface ModuleMeta {
   hasCadence: boolean;
   defaultFrequency: Frequency;
   defaultOn: boolean;
+  /** Something about how it sends that the frequency alone does not say. */
+  note?: string;
 }
 
 export const MODULE_META: ModuleMeta[] = [
@@ -59,11 +61,13 @@ export const MODULE_META: ModuleMeta[] = [
   {
     module: "repo_guard",
     name: "Repo Guard",
-    description: "Vulnerable, hijacked or deprecated dependencies in your GitHub repos.",
-    available: false,
+    description: "Vulnerable, hijacked, deprecated or end-of-life dependencies in the repos you pick, with the fix.",
+    available: true,
     hasCadence: true,
     defaultFrequency: "daily",
-    defaultOn: false,
+    // On from the start, and silent until there is a repository to watch.
+    defaultOn: true,
+    note: "Only sent when a scan finds something new. Anything being exploited, or critical with a fix, goes out straight away.",
   },
   {
     module: "learn",

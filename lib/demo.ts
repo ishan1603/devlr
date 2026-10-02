@@ -20,6 +20,7 @@ const SUBSCRIPTIONS: Me["subscriptions"] = [
   { module: "digest", is_active: true, frequency: "weekly", custom_interval_days: null, last_sent_at: "2026-09-28T02:30:00Z" },
   { module: "dev_pulse", is_active: true, frequency: "weekly", custom_interval_days: null, last_sent_at: "2026-09-28T02:30:00Z" },
   { module: "eol_watch", is_active: true, frequency: "daily", custom_interval_days: null, last_sent_at: "2026-09-28T02:30:00Z" },
+  { module: "repo_guard", is_active: true, frequency: "daily", custom_interval_days: null, last_sent_at: "2026-10-01T02:30:00Z" },
 ];
 
 export const DEMO_ME: Me = {
@@ -77,6 +78,14 @@ export const DEMO_DELIVERIES: DeliveryRow[] = [
     subject: "EDG opens its C++ front end, Shopify drops React Native",
     preheader: "Plus a 4.57% faster Rust compiler, and Next.js 15 reaches end of life in 20 days.",
     modules: ["eol_watch", "digest", "dev_pulse"],
+  }),
+  demoIssue(6, {
+    status: "sent",
+    created_at: "2026-09-30T11:42:00Z",
+    subject: "next 15.4.5 in storefront: 31 advisories, 3 critical",
+    preheader: "Upgrade to 15.5.24.",
+    modules: ["repo_guard"],
+    href: "/demo/email?view=alert",
   }),
   demoIssue(2, { status: "skipped", created_at: "2026-09-30T02:30:00Z" }),
   demoIssue(3, {

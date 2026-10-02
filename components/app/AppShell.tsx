@@ -27,6 +27,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { path: "", label: "Home", icon: Home },
+  { path: "/repos", label: "Repos", icon: ShieldCheck },
   { path: "/topics", label: "Topics", icon: Tags },
   { path: "/schedule", label: "Schedule", icon: CalendarClock },
   { path: "/issues", label: "Issues", icon: Inbox },
@@ -35,7 +36,6 @@ const NAV: NavItem[] = [
 
 /** Shown so the product's direction is visible, without pretending they work. */
 const UPCOMING = [
-  { label: "Repos", icon: ShieldCheck },
   { label: "Learn", icon: GraduationCap },
   { label: "Companies", icon: Building2 },
 ];
@@ -155,12 +155,12 @@ export default function AppShell({
       {/* Bottom padding keeps content clear of the tab bar on small screens. */}
       <main className="pb-24 lg:pb-0">{children}</main>
 
-      {/* Tab bar: phones and tablets. Five targets, thumb-reachable. */}
+      {/* Tab bar: phones and tablets. Six targets, still 53px each on the narrowest phone. */}
       <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-5">
+        <div className="mx-auto grid max-w-lg grid-cols-6">
           {nav.map((item) => {
             const active = isActive(pathname, item.href, item.isHome);
             return (

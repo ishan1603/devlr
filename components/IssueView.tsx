@@ -1,4 +1,4 @@
-import type { Issue, Section, StoryItem } from "@/lib/delivery/issue";
+import type { GuardEntry, GuardSection, Issue, Section, StoryItem } from "@/lib/delivery/issue";
 import { cx } from "@/components/ui";
 
 /**
@@ -74,15 +74,98 @@ function Story({ item, lead }: { item: StoryItem; lead: boolean }) {
   );
 }
 
-function renderSection(section: Section, index: number) {
+const PRIORITY_TONE: Record<GuardEntry["priority"], string> = {
+  urgent: "text-danger",
+  high: "text-warning",
+  medium: "text-subtle",
+  low: "text-subtle",
+};
+
+const gradeTone = (grade: string) =>
+  grade === "A" || grade === "B" ? "text-accent" : grade === "C" ? "text-warning" : "text-danger";
+
+function Guard({ section }: { section: GuardSection }) {
+  if (section.redacted) {
+    return (
+      <p className="mt-3 text-[15px] leading-relaxed text-muted">
+        This issue reported on your repositories. Those details stay in your inbox and your account.{" "}
+        <a href={section.url} className="underline hover:text-fg">
+          Open Repo Guard
+        </a>
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {section.repos.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {section.repos.map((repo) => (
+            <li key={repo.fullName} className="flex items-baseline justify-between gap-4 font-mono text-[13px]">
+              <a href={repo.url} className="min-w-0 break-all hover:text-accent">
+                {repo.fullName}
+              </a>
+              <span className="shrink-0 text-[12px] text-subtle">
+                <span className={cx("font-semibold", gradeTone(repo.grade))}>{repo.grade}</span>
+                {`  ${repo.score}/100  ·  ${repo.toFix} to fix`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {section.entries.map((entry) => (
+        <article key={entry.ref} className="mt-5">
+          <p className="font-mono text-[12px]">
+            <span className={cx("font-semibold", PRIORITY_TONE[entry.priority])}>[{entry.priority}]</span>
+            <span className="text-subtle">{`  ${entry.repo}`}</span>
+          </p>
+          <h3 className="mt-1 text-[16px] font-semibold leading-snug tracking-tight sm:text-[17px]">
+            <a href={entry.url} className="hover:text-accent">
+              {entry.title}
+            </a>
+          </h3>
+          {entry.meta.length > 0 && (
+            <p className="mt-1 break-words font-mono text-[12px] text-subtle">{entry.meta.join("  ·  ")}</p>
+          )}
+          <p className="mt-2 text-[15px] leading-relaxed text-muted">{entry.action}</p>
+          {entry.command && (
+            <pre className="mt-2.5 overflow-x-auto rounded-lg border border-line bg-surface-sunken px-3 py-2.5 font-mono text-[13px] leading-5">
+              <span className="select-none text-subtle">$ </span>
+              {entry.command}
+            </pre>
+          )}
+        </article>
+      ))}
+
+      <p className="mt-4 text-[13px] text-subtle">
+        {section.also.length > 0 && <>Also needs attention: {section.also.join(", ")}. </>}
+        <a href={section.url} className="underline hover:text-fg">
+          See every finding and its advisories
+        </a>
+      </p>
+    </>
+  );
+}
+
+function renderSection(section: Section, index: number, sections: Section[]) {
   const key = `${section.module}-${section.label}`;
+
+  if (section.type === "guard") {
+    return (
+      <section key={key} className="mt-7">
+        <SectionLabel label={section.label} />
+        <Guard section={section} />
+      </section>
+    );
+  }
 
   if (section.type === "stories") {
     return (
       <section key={key} className="mt-7">
         <SectionLabel label={section.label} />
         {section.items.map((item, i) => (
-          <Story key={item.ref} item={item} lead={index === 0 && i === 0} />
+          <Story key={item.ref} item={item} lead={i === 0 && sections.findIndex((s) => s.type === "stories") === index} />
         ))}
       </section>
     );

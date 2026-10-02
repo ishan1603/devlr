@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase-admin";
 import type { Issue } from "@/lib/delivery/issue";
+import { markGuardNotified } from "@/lib/modules/guard";
 
 export type DeliveryKind = "scheduled" | "manual" | "urgent" | "preview";
 
@@ -87,9 +88,16 @@ export async function markSent(params: {
   seen: SeenRef[];
   modules: string[];
   advanceSchedule: boolean;
+  /** Repo Guard findings this issue announced. */
+  guardFindingIds?: number[];
 }) {
   const supabase = createAdminClient();
   const now = new Date().toISOString();
+
+  // First, because it is the one that matters most if a later write fails: an
+  // issue recorded as unsent is harmless, a security finding announced twice
+  // is the thing this whole table exists to prevent.
+  await markGuardNotified(params.guardFindingIds ?? []);
 
   if (params.seen.length > 0) {
     const { error } = await supabase.from("delivery_items").upsert(
@@ -144,6 +152,18 @@ export async function markSkipped(deliveryId: string, reason: string) {
     .from("deliveries")
     .update({ status: "skipped", error: reason, item_count: 0 })
     .eq("id", deliveryId);
+}
+
+/**
+ * Give a claim back without having sent anything.
+ *
+ * For a send that turned out to have no reason to exist, where the slot should
+ * stay free: an alert whose cause was fixed before it could go out. Unlike a
+ * skip, which deliberately keeps the day resolved.
+ */
+export async function abandonClaim(deliveryId: string) {
+  const supabase = createAdminClient();
+  await supabase.from("deliveries").delete().eq("id", deliveryId).eq("status", "sending");
 }
 
 export async function markFailed(deliveryId: string, err: unknown) {

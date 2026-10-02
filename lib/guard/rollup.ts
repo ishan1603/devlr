@@ -53,6 +53,11 @@ export interface PackageReport {
 
 const SEVERITY_ORDER: Severity[] = ["critical", "high", "moderate", "low", "unknown"];
 
+/** Which report entry a finding belongs to: its package, or itself when it has none. */
+export function groupKeyOf(finding: Pick<Finding, "ecosystem" | "package" | "key">): string {
+  return finding.ecosystem && finding.package ? packageKey(finding.ecosystem, finding.package) : finding.key;
+}
+
 function severitySummary(severities: Partial<Record<Severity, number>>): string {
   const parts = SEVERITY_ORDER.filter((s) => s !== "unknown" && severities[s]).map((s) => `${severities[s]} ${s}`);
   return parts.length > 0 ? ` (${parts.join(", ")})` : "";
@@ -115,7 +120,7 @@ function upgradeAction(plan: UpgradePlan, vulnerabilities: Finding[], direct: bo
 export function rollup(findings: Finding[], plans: Map<string, UpgradePlan> = new Map()): PackageReport[] {
   const groups = new Map<string, Finding[]>();
   for (const finding of findings) {
-    const key = finding.ecosystem && finding.package ? packageKey(finding.ecosystem, finding.package) : finding.key;
+    const key = groupKeyOf(finding);
     groups.set(key, [...(groups.get(key) ?? []), finding]);
   }
 

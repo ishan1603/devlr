@@ -7,14 +7,16 @@ import { inngest } from "@/lib/inngest/client";
  *
  * A fresh install has an empty content pool, no lifecycle data and no trending
  * repos, so the first preview would have nothing in it for up to two hours.
- * This fills all three. Needs both `npm run dev` and `npm run dev:inngest`
- * running, because it only sends events; the app does the work.
+ * This fills all three, and scans any watched repository that is due. Needs
+ * both `npm run dev` and `npm run dev:inngest` running, because it only sends
+ * events; the app does the work.
  */
 async function main() {
   const events = [
     { name: "content.ingest", data: {} },
     { name: "eol.refresh", data: {} },
     { name: "pulse.refresh", data: {} },
+    { name: "guard.sweep", data: {} },
   ];
 
   try {
@@ -27,7 +29,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Queued: content.ingest, eol.refresh, pulse.refresh");
+  console.log("Queued: content.ingest, eol.refresh, pulse.refresh, guard.sweep");
   console.log("Watch them run at http://localhost:8288 (ingest then enrich takes a few minutes).");
 }
 

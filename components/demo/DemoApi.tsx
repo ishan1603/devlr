@@ -73,6 +73,19 @@ if (typeof window !== "undefined" && !window.__devlrDemoFetch) {
     if (path === "/api/send-now") return json({ queued: true });
     if (path === "/api/account") return json({ deleted: true });
 
+    // Repo Guard. The demo's repositories are fixed, so these accept the
+    // request and change nothing.
+    if (path === "/api/repos" && method === "GET") {
+      return json({ repos: [], account: { githubConfigured: true, accounts: [], limit: 15 } });
+    }
+    if (path === "/api/repos" && method === "POST") {
+      const { repo } = JSON.parse(String(init?.body ?? "{}"));
+      return json({ repo: { id: "00000000-0000-4000-8000-0000000000a4", fullName: String(repo ?? "owner/name") } }, 201);
+    }
+    if (/^\/api\/repos\/[^/]+\/scan$/.test(path)) return json({ queued: true });
+    if (/^\/api\/repos\/[^/]+$/.test(path) && method !== "GET") return json({ ok: true });
+    if (path.startsWith("/api/github/installations/")) return json({ ok: true });
+
     return json({ error: "Not available in the demo." }, 404);
   };
 }

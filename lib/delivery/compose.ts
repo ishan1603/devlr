@@ -1,10 +1,13 @@
 import { createAdminClient } from "@/lib/supabase-admin";
-import { editIssue, interestNames } from "@/lib/delivery/editor";
+import { editIssue, interestNames, type EditorOutput } from "@/lib/delivery/editor";
 import { MODULE_ORDER, coverageDays, type Frequency, type Module } from "@/lib/delivery/schedule";
-import type { Issue, ModuleResult, Section } from "@/lib/delivery/issue";
+import { guardSection, type Issue, type ModuleResult, type Section } from "@/lib/delivery/issue";
 import { assembleDigest } from "@/lib/modules/digest";
 import { assembleEol } from "@/lib/modules/eol";
+import { guardCopy } from "@/lib/guard/news";
+import { assembleGuard } from "@/lib/modules/guard";
 import { assemblePulse } from "@/lib/modules/pulse";
+import { assembleLearn } from "@/lib/modules/learn";
 
 /**
  * Composition: several modules, one email.
@@ -41,7 +44,11 @@ export interface Composed {
   seen: ModuleResult["seen"];
   /** Modules that produced at least one section. */
   contributing: Module[];
+  /** Repo Guard findings to mark as told once the email has gone. */
+  guardFindingIds: number[];
 }
+
+const PREHEADER_MAX = 110;
 
 export async function loadComposeContext(userId: string): Promise<{
   profile: ComposeProfile;
@@ -86,7 +93,11 @@ async function runModule(
       return assemblePulse(profile);
     case "eol_watch":
       return assembleEol(profile);
-    // Repo Guard, Release Radar, Learn and Company Radar plug in here.
+    case "repo_guard":
+      return assembleGuard(profile);
+    case "learn":
+      return assembleLearn(profile);
+    // Release Radar and Company Radar plug in here.
     default:
       return { sections: [], seen: [] };
   }
@@ -125,6 +136,7 @@ export async function composeIssue(
   const sections: Section[] = [];
   const seen: ModuleResult["seen"] = [];
   const contributing: Module[] = [];
+  const guardFindingIds: number[] = [];
 
   for (const name of wanted) {
     // One module failing must not cost the reader the rest of the issue.
@@ -138,6 +150,7 @@ export async function composeIssue(
       if (result.sections.length === 0) continue;
       sections.push(...result.sections);
       seen.push(...result.seen);
+      guardFindingIds.push(...(result.notified ?? []));
       contributing.push(name);
     } catch (err) {
       console.error(`[compose] module ${name} failed for ${profile.user_id}:`, err);
@@ -146,12 +159,35 @@ export async function composeIssue(
 
   if (sections.length === 0) return null;
 
-  const copy = await editIssue({
-    sections,
-    interests: interestNames(profile.domains, profile.stack),
-    previousIntros: await previousIntros(profile.user_id),
-    date: now,
-  });
+  // A security finding leads the issue, and its subject line is not left to a
+  // model. The editor still writes the opening, about the reading that
+  // follows, which is the part it is good at and cannot get dangerously wrong.
+  const guard = guardSection(sections);
+  const reading = sections.filter((s) => s.type !== "guard");
+
+  let copy: EditorOutput;
+  if (guard && reading.length === 0) {
+    copy = { ...guardCopy(guard, false), aiEdited: false };
+  } else {
+    const edited = await editIssue({
+      sections: reading,
+      interests: interestNames(profile.domains, profile.stack),
+      previousIntros: await previousIntros(profile.user_id),
+      date: now,
+    });
+    if (guard) {
+      const fixed = guardCopy(guard, false);
+      const step = fixed.preheader.split(" Plus ")[0];
+      copy = {
+        subject: fixed.subject,
+        preheader: `${step} Also: ${edited.subject}`.slice(0, PREHEADER_MAX),
+        intro: edited.intro,
+        aiEdited: edited.aiEdited,
+      };
+    } else {
+      copy = edited;
+    }
+  }
 
   return {
     issue: {
@@ -164,5 +200,6 @@ export async function composeIssue(
     },
     seen,
     contributing,
+    guardFindingIds,
   };
 }

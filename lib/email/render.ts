@@ -43,6 +43,24 @@ export function renderIssueText({ issue, links }: Pick<IssueEmailProps, "issue" 
           ""
         );
       }
+    } else if (section.type === "guard") {
+      if (section.redacted) {
+        lines.push(`Details are in your account: ${section.url}`, "");
+        continue;
+      }
+      for (const repo of section.repos) {
+        lines.push(`${repo.fullName}  ${repo.grade} ${repo.score}/100, ${repo.toFix} to fix`);
+      }
+      if (section.repos.length) lines.push("");
+      for (const entry of section.entries) {
+        lines.push(`[${entry.priority}] ${entry.repo}`, entry.title);
+        if (entry.meta.length) lines.push(entry.meta.join(" | "));
+        lines.push(entry.action);
+        if (entry.command) lines.push(`$ ${entry.command}`);
+        lines.push(entry.url, "");
+      }
+      if (section.also.length) lines.push(`Also needs attention: ${section.also.join(", ")}.`);
+      lines.push(`Every finding: ${section.url}`, "");
     } else {
       for (const entry of section.entries) {
         lines.push(

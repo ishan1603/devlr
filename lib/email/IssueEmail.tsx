@@ -2,7 +2,10 @@ import * as React from "react";
 import { formatStars } from "@/lib/modules/pulse";
 import type {
   EolSection,
+  GuardEntry,
+  GuardSection,
   Issue,
+  LearnSection,
   ReposSection,
   Section,
   StoriesSection,
@@ -335,26 +338,260 @@ function Eol({ section }: { section: EolSection }) {
   );
 }
 
-function renderSection(section: Section, index: number) {
+/** Colour for a priority or a grade, plus the class that re-colours it in dark mode. */
+function toneFor(level: "bad" | "warn" | "good" | "quiet"): { color: string; className: string } {
+  switch (level) {
+    case "bad":
+      return { color: C.danger, className: "d-danger" };
+    case "warn":
+      return { color: C.warning, className: "d-warning" };
+    case "good":
+      return { color: C.accent, className: "d-accent" };
+    default:
+      return { color: C.muted, className: "d-muted" };
+  }
+}
+
+const priorityTone = (priority: GuardEntry["priority"]) =>
+  toneFor(priority === "urgent" ? "bad" : priority === "high" ? "warn" : "quiet");
+const gradeTone = (grade: string) => toneFor(grade === "A" || grade === "B" ? "good" : grade === "C" ? "warn" : "bad");
+
+function GuardItem({ entry }: { entry: GuardEntry }) {
+  const tone = priorityTone(entry.priority);
+  return (
+    <tr>
+      <td className="m-pad" style={{ padding: "18px 36px 0 36px" }}>
+        <div style={{ fontFamily: MONO, fontSize: 12, lineHeight: "18px" }}>
+          <span className={tone.className} style={{ color: tone.color, fontWeight: 600 }}>
+            [{entry.priority}]
+          </span>
+          <span className="d-muted" style={{ color: C.muted }}>
+            {"  "}
+            {entry.repo}
+          </span>
+        </div>
+
+        <div
+          className="d-ink"
+          style={{ fontFamily: SANS, fontSize: 17, lineHeight: "24px", fontWeight: 600, letterSpacing: "-0.1px", color: C.ink, paddingTop: 4 }}
+        >
+          <a href={entry.url} style={{ color: C.ink, textDecoration: "none" }}>
+            {entry.title}
+          </a>
+        </div>
+
+        {entry.meta.length > 0 && (
+          <div
+            className="d-muted"
+            style={{ fontFamily: MONO, fontSize: 12, lineHeight: "18px", color: C.muted, paddingTop: 5 }}
+          >
+            {entry.meta.join("  ·  ")}
+          </div>
+        )}
+
+        <div
+          className="d-body"
+          style={{ fontFamily: SANS, fontSize: 15, lineHeight: "24px", color: C.body, paddingTop: 8 }}
+        >
+          {entry.action}
+        </div>
+
+        {entry.command && (
+          <div
+            className="d-sunken d-line d-ink"
+            style={{
+              marginTop: 10,
+              padding: "10px 12px",
+              background: C.sunken,
+              border: `1px solid ${C.line}`,
+              borderRadius: 8,
+              fontFamily: MONO,
+              fontSize: 13,
+              lineHeight: "20px",
+              color: C.ink,
+              // A long package name must wrap, not push the email wider than the screen.
+              wordBreak: "break-all",
+            }}
+          >
+            <span className="d-muted" style={{ color: C.muted }}>
+              ${" "}
+            </span>
+            {entry.command}
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function Guard({ section }: { section: GuardSection }) {
+  if (section.redacted) {
+    return (
+      <>
+        <SectionLabel label={section.label} />
+        <tr>
+          <td className="m-pad" style={{ padding: "14px 36px 0 36px" }}>
+            <div
+              className="d-body"
+              style={{ fontFamily: SANS, fontSize: 15, lineHeight: "24px", color: C.body }}
+            >
+              This issue reported on your repositories. Those details stay in your inbox and your account, and are
+              not shown on a page that opens with a link.{" "}
+              <a href={section.url} className="d-ink" style={{ color: C.ink, textDecoration: "underline" }}>
+                Open Repo Guard
+              </a>
+            </div>
+          </td>
+        </tr>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SectionLabel label={section.label} />
+
+      {section.repos.length > 0 && (
+        <tr>
+          <td className="m-pad" style={{ padding: "12px 36px 0 36px" }}>
+            <Table>
+              {section.repos.map((repo) => {
+                const tone = gradeTone(repo.grade);
+                return (
+                  <tr key={repo.fullName}>
+                    <td style={{ padding: "3px 0", fontFamily: MONO, fontSize: 13, lineHeight: "20px" }}>
+                      <a href={repo.url} className="d-ink" style={{ color: C.ink, textDecoration: "none" }}>
+                        {repo.fullName}
+                      </a>
+                    </td>
+                    <td
+                      align="right"
+                      className="d-muted"
+                      style={{ padding: "3px 0", whiteSpace: "nowrap", fontFamily: MONO, fontSize: 12, lineHeight: "20px", color: C.muted }}
+                    >
+                      <span className={tone.className} style={{ color: tone.color, fontWeight: 600 }}>
+                        {repo.grade}
+                      </span>
+                      {`  ${repo.score}/100  ·  ${repo.toFix} to fix`}
+                    </td>
+                  </tr>
+                );
+              })}
+            </Table>
+          </td>
+        </tr>
+      )}
+
+      {section.entries.map((entry) => (
+        <GuardItem key={entry.ref} entry={entry} />
+      ))}
+
+      <tr>
+        <td className="m-pad" style={{ padding: "16px 36px 0 36px" }}>
+          <div
+            className="d-muted"
+            style={{ fontFamily: SANS, fontSize: 13, lineHeight: "20px", color: C.muted }}
+          >
+            {section.also.length > 0 && <>Also needs attention: {section.also.join(", ")}. </>}
+            <a href={section.url} style={{ color: C.muted, textDecoration: "underline" }}>
+              See every finding and its advisories
+            </a>
+          </div>
+        </td>
+      </tr>
+    </>
+  );
+}
+
+function Learn({ section }: { section: LearnSection }) {
+  return (
+    <>
+      <SectionLabel label={section.label} />
+      <tr>
+        <td className="m-pad" style={{ padding: "14px 36px 0 36px" }}>
+          <div
+            className="d-ink"
+            style={{ fontFamily: SANS, fontSize: 17, lineHeight: "24px", fontWeight: 600, color: C.ink }}
+          >
+            {section.title}
+          </div>
+          <div
+            className="d-body"
+            style={{ fontFamily: SANS, fontSize: 15, lineHeight: "24px", color: C.body, paddingTop: 8 }}
+          >
+            {section.question}
+          </div>
+
+          {section.hints.length > 0 && (
+            <div className="d-sunken d-line" style={{ marginTop: 16, padding: "12px 16px", background: C.sunken, border: `1px solid ${C.line}`, borderRadius: 8 }}>
+              <div className="d-muted" style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: C.muted, paddingBottom: 4 }}>
+                HINTS
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontFamily: SANS, fontSize: 14, color: C.body, lineHeight: "20px" }}>
+                {section.hints.map((hint, i) => (
+                  <li key={i} className="d-body" style={{ paddingBottom: i === section.hints.length - 1 ? 0 : 4 }}>
+                    {hint}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div style={{ paddingTop: 16 }}>
+            <a
+              href={section.url}
+              style={{
+                display: "inline-block",
+                background: C.accent,
+                color: "#ffffff",
+                fontFamily: SANS,
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: "none",
+                padding: "8px 16px",
+                borderRadius: 6,
+              }}
+            >
+              Reveal Answer
+            </a>
+          </div>
+        </td>
+      </tr>
+    </>
+  );
+}
+
+function renderSection(section: Section, index: number, sections: Section[]) {
   const key = `${section.module}-${section.label}`;
   switch (section.type) {
     case "stories":
-      return <Stories key={key} section={section} isFirst={index === 0} />;
+      // The lead is the first story in the issue, even when a section of
+      // another kind (Repo Guard, EOL Watch) comes before it.
+      return <Stories key={key} section={section} isFirst={sections.findIndex((s) => s.type === "stories") === index} />;
     case "repos":
       return <Repos key={key} section={section} />;
     case "eol":
       return <Eol key={key} section={section} />;
+    case "guard":
+      return <Guard key={key} section={section} />;
+    case "learn":
+      return <Learn key={key} section={section} />;
   }
 }
 
 export default function IssueEmail({ issue, links, recipient }: IssueEmailProps) {
   const isoDay = issue.date.slice(0, 10);
+  const hasFeedback = issue.sections.some((s) => s.type === "stories" && s.items.some((item) => item.feedback));
 
   return (
     <html lang="en" dir="ltr">
       {/* eslint-disable-next-line @next/next/no-head-element -- an email document, not a Next.js page */}
       <head>
         <meta content="text/html; charset=UTF-8" httpEquiv="Content-Type" />
+        {/* Without this a phone lays the message out 980px wide and shrinks it
+            to fit, which makes the text tiny and the media queries below never
+            apply. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Stops Apple Mail from rescaling the layout on small screens. */}
         <meta name="x-apple-disable-message-reformatting" />
         <meta name="color-scheme" content="light dark" />
@@ -443,8 +680,8 @@ export default function IssueEmail({ issue, links, recipient }: IssueEmailProps)
                           color: C.muted,
                         }}
                       >
-                        Sent to {recipient} because you set this up at Devlr. The [+] and [-] links
-                        tune what you get next.
+                        Sent to {recipient} because you set this up at Devlr.
+                        {hasFeedback && " The [+] and [-] links tune what you get next."}
                         <br />
                         <a href={links.preferences} style={{ color: C.muted, textDecoration: "underline" }}>
                           Change what you get

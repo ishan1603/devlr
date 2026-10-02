@@ -104,11 +104,16 @@ export interface Deprecations {
  * Only direct dependencies are worth asking about: they are the ones a reader
  * chose and can replace.
  */
+/** The dependencies whose deprecation status is worth knowing: chosen by the repo, and exact. */
+export function deprecationCandidates(dependencies: Dependency[]): Dependency[] {
+  return dependencies.filter((d) => d.direct && d.pinned && DEPS_DEV_SYSTEMS[d.ecosystem]);
+}
+
 export async function fetchDeprecations(
   dependencies: Dependency[],
   known: Map<string, Deprecation | null> = new Map()
 ): Promise<Deprecations> {
-  const eligible = dependencies.filter((d) => d.direct && d.pinned && DEPS_DEV_SYSTEMS[d.ecosystem]);
+  const eligible = deprecationCandidates(dependencies);
   const candidates = eligible.filter((d) => !known.has(deprecationKey(d))).slice(0, MAX_DEPRECATION_CHECKS);
 
   const out = new Map<string, Deprecation>();

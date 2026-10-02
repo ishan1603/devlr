@@ -43,6 +43,17 @@ export const MODULE_ORDER: Module[] = [
  */
 export const PIGGYBACK_MODULES: ReadonlySet<Module> = new Set(["eol_watch"]);
 
+/**
+ * Modules that trigger a send only when they have something new to report.
+ *
+ * Repo Guard is checked daily, and on most days a healthy repo has nothing to
+ * say. Dispatching a send for every reader every day just to discover that
+ * would spend most of a free background-job quota on empty runs. So the
+ * scheduler asks first who has news, and for everyone else the module rides
+ * along with whatever is going out anyway.
+ */
+export const NEWS_DRIVEN_MODULES: ReadonlySet<Module> = new Set(["repo_guard"]);
+
 export interface ScheduleProfile {
   user_id: string;
   timezone: string | null;
@@ -163,11 +174,15 @@ function moduleIsDue(sub: ScheduleSubscription, local: LocalParts, timezone: str
  * Two gates. The local wall clock must have reached their send time, and at
  * least one module that can trigger a send must have waited out its cadence.
  * Piggyback modules ride along whenever anything else is going.
+ *
+ * `withNews` names the news-driven modules that have something for this
+ * reader. One that is due but has no news does not trigger a send.
  */
 export function evaluateDue(
   profile: ScheduleProfile,
   subscriptions: ScheduleSubscription[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  withNews: ReadonlySet<Module> = new Set()
 ): DueResult {
   const local = localParts(profile.timezone, now);
   const slot = local.date;
@@ -182,7 +197,10 @@ export function evaluateDue(
   }
 
   const dueSubs = subscriptions.filter((sub) => moduleIsDue(sub, local, profile.timezone));
-  const triggers = dueSubs.filter((sub) => !PIGGYBACK_MODULES.has(sub.module));
+  const triggers = dueSubs.filter(
+    (sub) =>
+      !PIGGYBACK_MODULES.has(sub.module) && (!NEWS_DRIVEN_MODULES.has(sub.module) || withNews.has(sub.module))
+  );
   if (triggers.length === 0) return none("nothing due");
 
   const dueSet = new Set(dueSubs.map((s) => s.module));

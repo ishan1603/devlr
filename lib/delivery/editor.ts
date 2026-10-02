@@ -14,6 +14,7 @@ import {
 import { titleTokens } from "@/lib/sources/simhash";
 import { tagName } from "@/lib/topics/catalog";
 import { countItems, leadStory, type Section } from "@/lib/delivery/issue";
+import { guardCopy } from "@/lib/guard/news";
 
 /**
  * The editor: the one model call made per reader, per issue.
@@ -109,6 +110,10 @@ function briefFor(input: EditorInput): string {
       for (const repo of section.repos) {
         lines.push(`${++n}. ${repo.fullName}, ${repo.stars} stars: ${repo.description}`);
       }
+    } else if (section.type === "guard") {
+      for (const entry of section.entries) {
+        lines.push(`${++n}. In ${entry.repo}: ${entry.title}\n   ${entry.action}`);
+      }
     } else {
       for (const entry of section.entries) {
         lines.push(
@@ -137,6 +142,7 @@ function vocabulary(sections: Section[]): Set<string> {
   for (const section of sections) {
     if (section.type === "stories") section.items.forEach((i) => add(`${i.title} ${i.summary} ${i.source}`));
     else if (section.type === "repos") section.repos.forEach((r) => add(`${r.fullName.replace("/", " ")} ${r.description}`));
+    else if (section.type === "guard") section.entries.forEach((e) => add(`${e.repo.replace("/", " ")} ${e.title} ${e.action}`));
     else section.entries.forEach((e) => add(`${e.product} ${e.cycle} end of life`));
   }
   return words;
@@ -185,6 +191,8 @@ export function inventedNumbers(text: string, sections: Section[]): string[] {
       section.items.forEach((i) => add(`${i.title} ${i.summary} ${i.meta.join(" ")}`));
     } else if (section.type === "repos") {
       section.repos.forEach((r) => add(`${r.fullName} ${r.description} ${r.stars}`));
+    } else if (section.type === "guard") {
+      section.entries.forEach((e) => add(`${e.repo} ${e.title} ${e.action} ${e.command ?? ""} ${e.meta.join(" ")}`));
     } else {
       section.entries.forEach((e) => add(`${e.product} ${e.cycle} ${e.eolDate} ${e.daysLeft} ${e.latest ?? ""}`));
     }
@@ -276,7 +284,9 @@ export function templateCopy(input: EditorInput): EditorOutput {
         : lead.summary;
   } else {
     const first = input.sections[0];
-    if (first?.type === "eol") {
+    if (first?.type === "guard") {
+      ({ subject, preheader, intro } = guardCopy(first, false));
+    } else if (first?.type === "eol") {
       const e = first.entries[0];
       subject = fitSubject(`${e.product} ${e.cycle} reaches end of life in ${Math.max(0, e.daysLeft)} days`);
       preheader = "Lifecycle dates for the versions in your stack.";

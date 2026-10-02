@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ArrowUpRight, Inbox } from "lucide-react";
 import HomeActions from "@/components/app/HomeActions";
-import { Badge, Card, CardHeader, EmptyState, Eyebrow, Page, PageHeader } from "@/components/ui";
+import { GradeMark, statusLine } from "@/components/app/repos";
+import { Badge, Card, CardHeader, EmptyState, Eyebrow, Page, PageHeader, cx } from "@/components/ui";
 import { MODULE_META, formatTime, frequencyLabel } from "@/lib/modules/meta";
 import { tagName } from "@/lib/topics/catalog";
+import type { RepoSummary } from "@/lib/guard/view";
 import type { Me } from "@/lib/profile";
 
 /**
@@ -69,11 +71,16 @@ function subjectOf(delivery: DeliveryRow): string {
 export function HomeView({
   me,
   deliveries,
+  repos = [],
   basePath = "/app",
+  now = new Date(),
 }: {
   me: Me;
   deliveries: DeliveryRow[];
+  /** Watched repositories, worst health first. */
+  repos?: RepoSummary[];
   basePath?: string;
+  now?: Date;
 }) {
   const { profile, subscriptions } = me;
   const active = MODULE_META.filter((meta) =>
@@ -145,6 +152,44 @@ export function HomeView({
           </div>
         </Card>
       </div>
+
+      <Card className="mt-5">
+        <CardHeader
+          title="Repo health"
+          action={
+            <Link href={`${basePath}/repos`} className="text-[13px] font-medium text-accent hover:underline">
+              {repos.length > 0 ? "All repos" : "Add one"}
+            </Link>
+          }
+        />
+        {repos.length === 0 ? (
+          <EmptyState
+            title="No repositories watched"
+            description="Point Devlr at a repository and it tells you when a dependency needs fixing, with the command."
+          />
+        ) : (
+          <ul className="divide-y divide-line">
+            {repos.slice(0, 4).map((repo) => (
+              <li key={repo.id}>
+                <Link
+                  href={`${basePath}/repos/${repo.id}`}
+                  className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-surface-sunken sm:gap-4"
+                >
+                  <GradeMark repo={repo} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-mono text-[14px] font-semibold [overflow-wrap:anywhere] group-hover:text-accent">
+                      {repo.full_name}
+                    </span>
+                    <span className={cx("mt-0.5 block text-[13px]", repo.scan_status === "failed" ? "text-danger" : "text-muted")}>
+                      {statusLine(repo, now)}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <Card className="mt-5">
         <CardHeader
