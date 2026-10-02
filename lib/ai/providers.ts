@@ -74,7 +74,7 @@ export const MODELS = {
   geminiPro: {
     id: "gemini:pro",
     provider: "gemini",
-    model: process.env.GEMINI_PRO_MODEL ?? "gemini-1.5-pro-latest",
+    model: process.env.GEMINI_PRO_MODEL ?? "gemini-1.5-pro",
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
     apiKeyEnv: "GEMINI_API_KEY",
     maxRequestsPerDay: 1500,
