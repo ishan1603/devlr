@@ -1,14 +1,17 @@
-export { updateSession as middleware } from "@/lib/middleware";
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/middleware";
+
+export async function middleware(request: NextRequest) {
+  return await updateSession(request);
+}
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Everything except static assets and the routes that never carry a
+    // session: background job callbacks, GitHub's webhooks, and the
+    // token-authorised endpoints reached from inside an email or a README.
+    // Refreshing a session costs a round trip to Supabase, and those requests
+    // have no session to refresh.
+    "/((?!_next/static|_next/image|favicon.ico|api/inngest|api/v1|api/unsubscribe|api/feedback|api/github/webhook|feed/|issue/|badge/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };
