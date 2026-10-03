@@ -38,8 +38,8 @@ export default async function CompaniesPage() {
         action={<CompanyActions />}
       />
 
-      <div className="surface border border-white/5 rounded-lg overflow-hidden mt-8">
-        <table className="w-full text-left text-sm">
+      <div className="surface border border-white/5 rounded-lg overflow-x-auto mt-8">
+        <table className="w-full text-left text-sm whitespace-nowrap">
           <thead className="bg-surface-sunken border-b border-white/5 text-subtle">
             <tr>
               <th className="px-6 py-4 font-medium uppercase tracking-wider text-xs">Company</th>
