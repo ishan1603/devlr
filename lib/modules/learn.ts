@@ -143,7 +143,7 @@ export async function assembleLearn(profile: ComposeProfile): Promise<ModuleResu
   // Pick an unseen question that matches the user's domains/stack.
   // Real implementation would filter by difficulty and domain, but for now we
   // just pick an unused, approved question.
-  const { data: item } = await supabase
+  let { data: item } = await supabase
     .from("learn_items")
     .select(`
       id, question, hints, status,
@@ -158,7 +158,48 @@ export async function assembleLearn(profile: ComposeProfile): Promise<ModuleResu
     .maybeSingle();
 
   if (!item) {
-    return { sections: [], seen: [] };
+    // Generate one on the fly based on the user's stack
+    const topic = profile.stack[0] || profile.domains[0] || "Software Engineering";
+    const domain = profile.domains[0] || "Backend";
+    try {
+      const state = await learnGraph.invoke({
+        topic: `${topic} core concepts`,
+        domain: domain,
+        difficulty: "intermediate",
+        format: "system_design",
+        draft: null,
+        review: null,
+        revisions: 0
+      });
+
+      if (!state.draft) throw new Error("Draft was not generated");
+
+      // Insert the new topic
+      const { data: topicData } = await supabase.from("learn_topics").insert({
+        domain: domain,
+        title: `${topic} System Design`,
+        format: "system_design",
+        difficulty: "intermediate"
+      }).select().single();
+
+      // Insert the new item
+      const { data: insertedItem } = await supabase.from("learn_items").insert({
+        topic_id: topicData!.id,
+        question: state.draft.question,
+        constraints: state.draft.constraints,
+        hints: state.draft.hints,
+        answer_md: state.draft.answer_md,
+        diagram_ascii: state.draft.diagram_ascii || null,
+        diagram_mermaid: state.draft.diagram_mermaid || null,
+        references: state.draft.references,
+        status: "approved"
+      }).select().single();
+
+      item = { ...insertedItem, topic: { title: topicData!.title } };
+    } catch (err) {
+      console.error("[learn] failed to generate question on the fly:", err);
+      return { sections: [], seen: [] };
+    }
   }
 
   // Record that we are sending this to the user today

@@ -74,13 +74,13 @@ const EditorState = Annotation.Root({
 
 type State = typeof EditorState.State;
 
-const SYSTEM = [
+const SYSTEM_BASE = [
   VOICE,
   "",
   "You are the editor of Devlr, a developer newsletter. You are given the contents of one",
   "issue, already chosen and summarised. Write three things.",
   "",
-  `subject: ${SUBJECT_MAX_LENGTH} characters at most. Keep it normal and consistent, such as "Your Devlr Issue for [Date]" or "Your Dev Pulse update". You can mention what kind of updates are included (EOL, Dev Pulse, Learn, etc).`,
+  `subject: ${SUBJECT_MAX_LENGTH} characters at most. Keep it normal and consistent, such as "Your Devlr Issue for {DATE}" or "Your Dev Pulse update". You can mention what kind of updates are included (EOL, Dev Pulse, Learn, etc).`,
   "",
   `preheader: ${PREHEADER_MAX} characters at most. It appears next to the subject in the inbox.`,
   "Add a brief summary of the most important item in the issue.",
@@ -301,6 +301,14 @@ export function templateCopy(input: EditorInput): EditorOutput {
       subject = fitSubject(`${e.product} ${e.cycle} reaches end of life in ${Math.max(0, e.daysLeft)} days`);
       preheader = "Lifecycle dates for the versions in your stack.";
       intro = "Support windows are closing on versions in your stack. The dates are below.";
+    } else if (first?.type === "learn") {
+      subject = "Learn System Design: " + first.title;
+      preheader = "Your daily learning question is ready.";
+      intro = "Take a moment to challenge yourself with today's system design question.";
+    } else if (first?.type === "company_radar") {
+      subject = "Updates from " + first.companies[0].name;
+      preheader = first.companies[0].updates[0]?.title || "Latest updates from companies you follow.";
+      intro = "Here are the latest updates from the companies you follow.";
     } else if (first?.type === "repos") {
       subject = fitSubject(`${first.repos[0].fullName} and ${first.repos.length - 1} more new repos`);
       preheader = first.repos[0].description;
@@ -328,7 +336,7 @@ async function write(state: State): Promise<Partial<State>> {
   const retry = state.attempts > 0;
   const result = await completeJSON({
     task: "editor",
-    system: SYSTEM,
+    system: SYSTEM_BASE.replace("{DATE}", state.input.date.toLocaleDateString()),
     prompt: retry
       ? `${briefFor(state.input)}\n\nYOUR LAST DRAFT WAS REJECTED. Fix this and write all three again:\n${state.notes}`
       : briefFor(state.input),

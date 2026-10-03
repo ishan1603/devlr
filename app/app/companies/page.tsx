@@ -3,6 +3,7 @@ import { getMe } from "@/lib/profile";
 import { createClient } from "@/lib/server";
 import { Page, PageHeader } from "@/components/ui";
 import CompanyFollowButton from "@/components/app/CompanyFollowButton";
+import CompanyActions from "@/components/app/CompanyActions";
 
 export const metadata: Metadata = { title: "Companies" };
 
@@ -34,6 +35,7 @@ export default async function CompaniesPage() {
       <PageHeader 
         title="Company Radar" 
         description="Follow engineering organizations to receive updates when they ship, publish blog posts, or experience incidents." 
+        action={<CompanyActions />}
       />
 
       <div className="surface border border-white/5 rounded-lg overflow-hidden mt-8">

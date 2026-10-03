@@ -282,7 +282,7 @@ export function Page({ className, children, ...props }: React.HTMLAttributes<HTM
   return (
     <div className={cx("mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-10 relative animate-in fade-in slide-in-from-bottom-4 duration-500", className)} {...props}>
       {/* Decorative Interactive Graphic */}
-      <div className="absolute right-8 top-8 hidden lg:block -z-10 [perspective:1000px]">
+      <div className="absolute right-8 top-8 hidden lg:block z-0 [perspective:1000px]">
         <div className="relative group cursor-pointer w-16 h-16 [transform-style:preserve-3d] transition-all duration-700 ease-out hover:[transform:rotateX(25deg)_rotateY(-25deg)_scale(1.1)]">
           <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full scale-50 group-hover:scale-150 transition-transform duration-700 ease-out" />
           <svg 
@@ -313,7 +313,7 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4 relative z-10 lg:pr-24">
       <div className="min-w-0">
         <h1 className="text-[26px] font-semibold leading-tight tracking-tight sm:text-[30px]">{title}</h1>
         {description && <p className="mt-1.5 max-w-xl text-[15px] text-muted">{description}</p>}
