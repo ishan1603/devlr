@@ -1,4 +1,4 @@
-import { createAdminClient } from "./lib/supabase-admin.ts";
+import { createAdminClient } from "../lib/supabase-admin";
 
 async function seed() {
   const supabase = createAdminClient();
@@ -9,7 +9,7 @@ async function seed() {
     return;
   }
 
-  const updates = companies.flatMap(c => [
+  const updates = companies.flatMap((c: any) => [
     {
       company_id: c.id,
       kind: 'blog',

@@ -182,24 +182,32 @@ export async function assembleLearn(profile: ComposeProfile): Promise<ModuleResu
         difficulty: "intermediate"
       }).select().single();
 
+      const draft = state.draft as AuthorOutput;
+      
       // Insert the new item
-      const { data: insertedItem } = await supabase.from("learn_items").insert({
+      const { data: insertedItem, error: insertError } = await supabase.from("learn_items").insert({
         topic_id: topicData!.id,
-        question: state.draft.question,
-        constraints: state.draft.constraints,
-        hints: state.draft.hints,
-        answer_md: state.draft.answer_md,
-        diagram_ascii: state.draft.diagram_ascii || null,
-        diagram_mermaid: state.draft.diagram_mermaid || null,
-        references: state.draft.references,
+        question: draft.question,
+        constraints: draft.constraints,
+        hints: draft.hints,
+        answer_md: draft.answer_md,
+        diagram_ascii: draft.diagram_ascii || null,
+        diagram_mermaid: draft.diagram_mermaid || null,
+        references: draft.references,
         status: "approved"
       }).select().single();
 
-      item = { ...insertedItem, topic: { title: topicData!.title } };
+      if (insertError) throw insertError;
+
+      item = { ...insertedItem, topic: { title: topicData!.title } } as any;
     } catch (err) {
       console.error("[learn] failed to generate question on the fly:", err);
       return { sections: [], seen: [] };
     }
+  }
+
+  if (!item) {
+    return { sections: [], seen: [] };
   }
 
   // Record that we are sending this to the user today
