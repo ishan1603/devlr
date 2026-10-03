@@ -224,7 +224,6 @@ async function callOnce(
     messages,
     temperature: params.temperature ?? 0.4,
     max_completion_tokens: params.maxTokens ?? 1500,
-    response_format: { type: "json_object" },
     ...(model.extra as object),
   } as OpenAI.ChatCompletionCreateParamsNonStreaming);
 

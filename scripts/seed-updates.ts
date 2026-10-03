@@ -12,14 +12,14 @@ async function seed() {
   const updates = companies.flatMap((c: any) => [
     {
       company_id: c.id,
-      kind: 'blog',
+      kind: 'wrote',
       title: `${c.name} Engineering: How we scaled our architecture in 2026`,
       url: `https://example.com/blog/${c.id}-scaling`,
       summary: `An in-depth look at the infrastructure changes ${c.name} made to handle 10x traffic with 99.99% uptime, open sourcing our new proxy layer.`,
     },
     {
       company_id: c.id,
-      kind: 'oss',
+      kind: 'shipped',
       title: `New Open Source Release from ${c.name}`,
       url: `https://github.com/example/${c.id}-oss`,
       summary: `We are thrilled to announce that our core rendering engine is now fully open source and available for the community to use and contribute to.`,
