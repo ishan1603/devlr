@@ -6,7 +6,7 @@ import type { Frequency, Module } from "@/lib/delivery/schedule";
  */
 
 /** Modules a user can switch on today. The rest of the schema is ahead of the UI. */
-export const AVAILABLE_MODULES = ["digest", "dev_pulse", "eol_watch", "repo_guard"] as const satisfies readonly Module[];
+export const AVAILABLE_MODULES = ["digest", "dev_pulse", "eol_watch", "repo_guard", "learn", "company_radar"] as const satisfies readonly Module[];
 export type AvailableModule = (typeof AVAILABLE_MODULES)[number];
 
 export function isAvailable(value: Module): value is AvailableModule {
@@ -73,7 +73,7 @@ export const MODULE_META: ModuleMeta[] = [
     module: "learn",
     name: "Learn",
     description: "A system design question at your level, with a worked answer.",
-    available: false,
+    available: true,
     hasCadence: true,
     defaultFrequency: "weekdays",
     defaultOn: false,
@@ -82,7 +82,7 @@ export const MODULE_META: ModuleMeta[] = [
     module: "company_radar",
     name: "Company Radar",
     description: "What the companies you follow shipped, wrote and open-sourced.",
-    available: false,
+    available: true,
     hasCadence: true,
     defaultFrequency: "weekly",
     defaultOn: false,
