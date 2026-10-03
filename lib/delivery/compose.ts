@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase-admin";
-import { editIssue, interestNames, type EditorOutput } from "@/lib/delivery/editor";
+import { editIssue, interestNames, templateCopy, type EditorOutput } from "@/lib/delivery/editor";
 import { MODULE_ORDER, coverageDays, type Frequency, type Module } from "@/lib/delivery/schedule";
 import { guardSection, type Issue, type ModuleResult, type Section } from "@/lib/delivery/issue";
 import { assembleDigest } from "@/lib/modules/digest";
@@ -173,23 +173,40 @@ export async function composeIssue(
   if (guard && reading.length === 0) {
     copy = { ...guardCopy(guard, false), aiEdited: false };
   } else {
-    const edited = await editIssue({
-      sections: reading,
-      interests: interestNames(profile.domains, profile.stack),
-      previousIntros: await previousIntros(profile.user_id),
-      date: now,
-    });
-    if (guard) {
-      const fixed = guardCopy(guard, false);
-      const step = fixed.preheader.split(" Plus ")[0];
-      copy = {
-        subject: fixed.subject,
-        preheader: `${step} Also: ${edited.subject}`.slice(0, PREHEADER_MAX),
-        intro: edited.intro,
-        aiEdited: edited.aiEdited,
-      };
+    const firstReading = reading[0];
+    if (firstReading && (firstReading.module === "digest" || firstReading.module === "dev_pulse")) {
+      const edited = await editIssue({
+        sections: reading,
+        interests: interestNames(profile.domains, profile.stack),
+        previousIntros: await previousIntros(profile.user_id),
+        date: now,
+      });
+      if (guard) {
+        const fixed = guardCopy(guard, false);
+        const step = fixed.preheader.split(" Plus ")[0];
+        copy = {
+          subject: fixed.subject,
+          preheader: `${step} Also: ${edited.subject}`.slice(0, PREHEADER_MAX),
+          intro: edited.intro,
+          aiEdited: edited.aiEdited,
+        };
+      } else {
+        copy = edited;
+      }
     } else {
-      copy = edited;
+      copy = templateCopy({
+        sections: reading,
+        interests: interestNames(profile.domains, profile.stack),
+        previousIntros: await previousIntros(profile.user_id),
+        date: now,
+      });
+      // guard will override the subject/preheader but intro remains what templateCopy produced
+      if (guard) {
+        const fixed = guardCopy(guard, false);
+        const step = fixed.preheader.split(" Plus ")[0];
+        copy.subject = fixed.subject;
+        copy.preheader = `${step} Also: ${copy.subject}`.slice(0, PREHEADER_MAX);
+      }
     }
   }
 

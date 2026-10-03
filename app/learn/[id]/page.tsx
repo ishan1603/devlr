@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase-admin";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 export const metadata: Metadata = { title: "Learn" };
 
@@ -64,11 +65,8 @@ export default async function LearnRevealPage({ params }: { params: Promise<{ id
             <div className="h-px bg-white/5 flex-1" />
           </div>
 
-          <div className="prose prose-invert prose-pre:bg-surface-sunken prose-pre:border prose-pre:border-white/5 max-w-none">
-            {/* Note: in a real app we'd use react-markdown here, but for simplicity we render the raw text or parse it. */}
-            <div className="whitespace-pre-wrap leading-relaxed text-muted">
-              {item.answer_md}
-            </div>
+          <div className="prose prose-invert prose-pre:bg-surface-sunken prose-pre:border prose-pre:border-white/5 max-w-none prose-p:leading-relaxed prose-p:text-muted">
+            <ReactMarkdown>{item.answer_md}</ReactMarkdown>
           </div>
 
           {item.diagram_ascii && (
