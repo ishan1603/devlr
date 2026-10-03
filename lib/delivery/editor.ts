@@ -80,17 +80,14 @@ const SYSTEM = [
   "You are the editor of Devlr, a developer newsletter. You are given the contents of one",
   "issue, already chosen and summarised. Write three things.",
   "",
-  `subject: ${SUBJECT_MAX_LENGTH} characters at most. Name the single most important item`,
-  "concretely: the product, the version, the number. It may add a second item after a comma.",
-  "It must read like one developer telling another what happened. Not a teaser, not a",
-  "question, no 'Your weekly digest', no colon-separated label, no title case.",
+  `subject: ${SUBJECT_MAX_LENGTH} characters at most. Keep it normal and consistent, such as "Your Devlr Issue for [Date]" or "Your Dev Pulse update". You can mention what kind of updates are included (EOL, Dev Pulse, Learn, etc).`,
   "",
   `preheader: ${PREHEADER_MAX} characters at most. It appears next to the subject in the inbox.`,
-  "Add something the subject did not say, such as the second and third items.",
+  "Add a brief summary of the most important item in the issue.",
   "",
   `intro: one or two sentences, ${INTRO_MAX_WORDS} words at most. Say what ties this issue`,
   "together or why the lead item matters to someone with this reader's interests. Do not",
-  "greet the reader, do not say 'this week' or 'in this issue', do not list every item.",
+  "greet the reader, do not list every item.",
   "",
   "Use only facts from the items provided.",
 ].join("\n");
@@ -98,6 +95,7 @@ const SYSTEM = [
 function briefFor(input: EditorInput): string {
   const lines: string[] = [];
   if (input.interests.length > 0) lines.push(`READER INTERESTS: ${input.interests.join(", ")}`);
+  lines.push(`DATE: ${input.date.toLocaleDateString()}`);
 
   let n = 0;
   for (const section of input.sections) {
@@ -246,21 +244,14 @@ export function reviewDraft(draft: Draft, sections: Section[]): { clean: Draft; 
     issues.push({ rule: "too-long", detail: "intro" });
     notes.push(`The intro is too long, the limit is ${INTRO_MAX_WORDS} words.`);
   }
-  if (clean.subject && !isGrounded(clean.subject, sections)) {
-    issues.push({ rule: "empty", detail: "subject not grounded" });
-    notes.push("The subject must name something that is actually in the issue.");
-  }
-  const invented = inventedNumbers(`${clean.subject} ${clean.preheader} ${clean.intro}`, sections);
+
+  const invented = inventedNumbers(`${clean.preheader} ${clean.intro}`, sections);
   if (invented.length > 0) {
     issues.push({ rule: "empty", detail: "invented number" });
     notes.push(
       `These numbers are not in the source material: ${[...new Set(invented)].join(", ")}. ` +
         "Use only versions, dates and figures that appear in the items."
     );
-  }
-  if (/^(your|this week|weekly|daily|devlr)\b/i.test(clean.subject)) {
-    issues.push({ rule: "banned-phrase", detail: "generic subject" });
-    notes.push("The subject is generic. Lead with the specific item.");
   }
 
   return { clean, issues, notes: notes.join(" ") };

@@ -133,49 +133,8 @@ export function ReposView({
         source code.
       </p>
 
-      <div className="mt-8 grid gap-5 lg:grid-cols-2">
-        <Card className="min-w-0">
-          <CardHeader title="GitHub" description="For private repositories, and to scan again when you push." />
-          <div className="p-5">
-            {account.accounts.length > 0 ? (
-              <ul className="space-y-3">
-                {account.accounts.map((github) => (
-                  <li key={github.installationId} className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-2 text-[14px] font-medium">
-                      <GitBranch className="size-4 shrink-0 text-subtle" />
-                      <span className="truncate">{github.login}</span>
-                      {github.suspended && <Badge tone="warning">suspended</Badge>}
-                    </span>
-                    <DisconnectButton installationId={github.installationId} login={github.login} />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[13px] leading-relaxed text-muted">
-                {account.githubConfigured
-                  ? "Read-only, and only for the repositories you choose on GitHub's own screen. Devlr asks for contents and metadata, nothing else, and stores no token."
-                  : "This deployment has no GitHub App yet, so private repositories are not available. Public ones can be watched by name."}
-              </p>
-            )}
-
-            {account.githubConfigured && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {account.accounts.length === 0 ? (
-                  <a href={connect(`from=${basePath}/repos`)} className={buttonClass("primary", "md")}>
-                    <GitBranch className="size-4" />
-                    Connect GitHub
-                  </a>
-                ) : (
-                  <a href={connect(`mode=install&from=${basePath}/repos`)} className={buttonClass("secondary", "sm")}>
-                    Choose repositories on GitHub
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-
-        <Card className="min-w-0">
+      <div className="mt-8 grid gap-5 lg:grid-cols-1 max-w-xl">
+        <Card className="min-w-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <CardHeader title="Watch a public repository" description="Yours, or an open-source project you depend on." />
           <div className="p-5">
             <AddRepoForm disabled={atLimit} />
@@ -186,23 +145,23 @@ export function ReposView({
         </Card>
       </div>
 
-      <Card className="mt-5">
+      <Card className="mt-5 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
         <CardHeader title="Watched" description="Scanned when you push, and again every day against new advisories." />
         {watched.length === 0 ? (
           <EmptyState
             icon={<ShieldCheck className="size-6" />}
             title="No repositories yet"
-            description="Connect GitHub or add a public repository above. The first scan takes a few seconds."
+            description="Add a public repository above. The first scan takes a few seconds."
           />
         ) : (
           <ul className="divide-y divide-line">
             {watched.map((repo) => (
-              <li key={repo.id} className="flex items-center gap-3 px-5 py-4 sm:gap-4">
+              <li key={repo.id} className="flex items-center gap-3 px-5 py-4 sm:gap-4 hover:bg-white/[0.02] transition-colors">
                 <Link href={`${basePath}/repos/${repo.id}`} className="group flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                   <GradeMark repo={repo} />
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="[overflow-wrap:anywhere] font-mono text-[14px] font-semibold group-hover:text-accent">
+                      <span className="[overflow-wrap:anywhere] font-mono text-[14px] font-semibold group-hover:text-accent transition-colors">
                         {repo.full_name}
                       </span>
                       <RepoBadges repo={repo} />
@@ -225,7 +184,7 @@ export function ReposView({
       </Card>
 
       {others.length > 0 && (
-        <Card className="mt-5">
+        <Card className="mt-5 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
           <CardHeader
             title="Not watched"
             description={
@@ -236,7 +195,7 @@ export function ReposView({
           />
           <ul className="divide-y divide-line">
             {others.map((repo) => (
-              <li key={repo.id} className="flex items-center justify-between gap-4 px-5 py-3">
+              <li key={repo.id} className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-white/[0.02] transition-colors">
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="[overflow-wrap:anywhere] font-mono text-[13px] text-muted">{repo.full_name}</span>
                   <RepoBadges repo={repo} />

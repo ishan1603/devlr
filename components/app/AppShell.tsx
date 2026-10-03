@@ -31,14 +31,13 @@ const NAV: NavItem[] = [
   { path: "/topics", label: "Topics", icon: Tags },
   { path: "/schedule", label: "Schedule", icon: CalendarClock },
   { path: "/issues", label: "Issues", icon: Inbox },
+  { path: "/learn", label: "Learn", icon: GraduationCap },
+  { path: "/companies", label: "Companies", icon: Building2 },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 /** Shown so the product's direction is visible, without pretending they work. */
-const UPCOMING = [
-  { label: "Learn", icon: GraduationCap },
-  { label: "Companies", icon: Building2 },
-];
+const UPCOMING: { label: string; icon: LucideIcon }[] = [];
 
 function isActive(pathname: string, href: string, isHome: boolean): boolean {
   return isHome ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -160,7 +159,7 @@ export default function AppShell({
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-6">
+        <div className="mx-auto flex max-w-lg overflow-x-auto overflow-y-hidden">
           {nav.map((item) => {
             const active = isActive(pathname, item.href, item.isHome);
             return (
@@ -169,7 +168,7 @@ export default function AppShell({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+                  "flex h-16 min-w-[64px] flex-1 shrink-0 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
                   active ? "text-accent" : "text-subtle hover:text-fg"
                 )}
               >
