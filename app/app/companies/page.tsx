@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getMe } from "@/lib/profile";
 import { createClient } from "@/lib/server";
 import { Page, PageHeader } from "@/components/ui";
+import CompanyFollowButton from "@/components/app/CompanyFollowButton";
 
 export const metadata: Metadata = { title: "Companies" };
 
@@ -57,15 +58,7 @@ export default async function CompaniesPage() {
                   </a>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button
-                    className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                      company.isFollowing 
-                        ? "bg-surface-sunken text-muted hover:text-danger hover:bg-danger/10"
-                        : "bg-accent/10 text-accent hover:bg-accent hover:text-on-accent"
-                    }`}
-                  >
-                    {company.isFollowing ? "Following" : "Follow"}
-                  </button>
+                  <CompanyFollowButton companyId={company.id} initialFollowing={company.isFollowing} />
                 </td>
               </tr>
             ))}
