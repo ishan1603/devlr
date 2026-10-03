@@ -1,0 +1,36 @@
+-- Insert 30 more tech companies to follow
+INSERT INTO public.companies (slug, name, domain, aliases, github_orgs, verified)
+VALUES
+  ('linear', 'Linear', 'linear.app', '{linear}', '{linear}', true),
+  ('cloudflare', 'Cloudflare', 'cloudflare.com', '{cloudflare}', '{cloudflare}', true),
+  ('hashicorp', 'HashiCorp', 'hashicorp.com', '{hashicorp,terraform,vault}', '{hashicorp}', true),
+  ('github', 'GitHub', 'github.com', '{github}', '{github}', true),
+  ('meta', 'Meta (Facebook)', 'engineering.fb.com', '{meta,facebook,react}', '{facebook}', true),
+  ('google', 'Google', 'google.com', '{google,go,golang}', '{google}', true),
+  ('microsoft', 'Microsoft', 'microsoft.com', '{microsoft,azure}', '{microsoft}', true),
+  ('netflix', 'Netflix', 'netflixtechblog.com', '{netflix}', '{netflix}', true),
+  ('airbnb', 'Airbnb', 'airbnb.io', '{airbnb}', '{airbnb}', true),
+  ('uber', 'Uber', 'eng.uber.com', '{uber}', '{uber}', true),
+  ('lyft', 'Lyft', 'eng.lyft.com', '{lyft}', '{lyft}', true),
+  ('spotify', 'Spotify', 'engineering.atspotify.com', '{spotify}', '{spotify}', true),
+  ('discord', 'Discord', 'discord.com', '{discord}', '{discord}', true),
+  ('slack', 'Slack', 'slack.engineering', '{slack}', '{slack}', true),
+  ('fly', 'Fly.io', 'fly.io', '{fly,flyio}', '{flyio}', true),
+  ('render', 'Render', 'render.com', '{render}', '{render-oss}', true),
+  ('supabase-1', 'Supabase', 'supabase.com', '{supabase}', '{supabase}', true), -- Duplicate conflict test
+  ('railway', 'Railway', 'railway.app', '{railway}', '{railwayapp}', true),
+  ('planetscale', 'PlanetScale', 'planetscale.com', '{planetscale}', '{planetscale}', true),
+  ('neon', 'Neon', 'neon.tech', '{neon}', '{neondatabase}', true),
+  ('aws', 'AWS', 'aws.amazon.com', '{aws,amazon}', '{aws}', true),
+  ('figma', 'Figma', 'figma.com', '{figma}', '{figma}', true),
+  ('notion', 'Notion', 'notion.so', '{notion}', '{makenotion}', true),
+  ('auth0', 'Auth0', 'auth0.com', '{auth0}', '{auth0}', true),
+  ('clerk', 'Clerk', 'clerk.com', '{clerk,clerkdev}', '{clerk}', true),
+  ('docker', 'Docker', 'docker.com', '{docker}', '{docker}', true),
+  ('gitlab', 'GitLab', 'gitlab.com', '{gitlab}', '{gitlabhq}', true),
+  ('databricks', 'Databricks', 'databricks.com', '{databricks}', '{databricks}', true),
+  ('snowflake', 'Snowflake', 'snowflake.com', '{snowflake}', '{snowflakedb}', true),
+  ('apollographql', 'Apollo GraphQL', 'apollographql.com', '{apollo,graphql}', '{apollographql}', true),
+  ('tailwindlabs', 'Tailwind Labs', 'tailwindcss.com', '{tailwind,tailwindcss}', '{tailwindlabs}', true),
+  ('sentry', 'Sentry', 'sentry.io', '{sentry}', '{getsentry}', true)
+ON CONFLICT (slug) DO NOTHING;
