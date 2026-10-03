@@ -64,7 +64,7 @@ export const MODELS = {
   geminiLite: {
     id: "gemini:flash-lite",
     provider: "gemini",
-    model: process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest",
+    model: process.env.GEMINI_MODEL ?? "gemini-1.5-flash-latest",
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
     apiKeyEnv: "GEMINI_API_KEY",
     maxRequestsPerDay: 450,
@@ -74,7 +74,7 @@ export const MODELS = {
   geminiPro: {
     id: "gemini:pro",
     provider: "gemini",
-    model: process.env.GEMINI_PRO_MODEL ?? "gemini-1.5-pro",
+    model: process.env.GEMINI_PRO_MODEL ?? "gemini-1.5-pro-latest",
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
     apiKeyEnv: "GEMINI_API_KEY",
     maxRequestsPerDay: 1500,
