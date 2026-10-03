@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getMe } from "@/lib/profile";
 import { createClient } from "@/lib/server";
 import { Page, PageHeader } from "@/components/ui";
+import LearnActions from "@/components/app/LearnActions";
 
 export const metadata: Metadata = { title: "Learn" };
 
@@ -32,12 +33,13 @@ export default async function LearnPage() {
       <PageHeader 
         title="Learn" 
         description={`A daily question to test your knowledge on ${me.profile.level || "intermediate"} topics.`} 
+        action={<LearnActions />}
       />
 
       {!active ? (
-        <div className="surface-sunken rounded-lg p-8 text-center text-subtle">
+        <div className="surface-sunken rounded-lg p-8 text-center text-subtle mt-10">
           <p>You haven't received any learning questions yet.</p>
-          <p className="mt-2 text-sm">We'll send your first one soon.</p>
+          <p className="mt-2 text-sm">Use the button above to generate your first one!</p>
         </div>
       ) : (
         <div className="space-y-6">

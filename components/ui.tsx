@@ -282,18 +282,19 @@ export function Page({ className, children, ...props }: React.HTMLAttributes<HTM
   return (
     <div className={cx("mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-10 relative animate-in fade-in slide-in-from-bottom-4 duration-500", className)} {...props}>
       {/* Decorative Interactive Graphic */}
-      <div className="absolute right-8 top-8 hidden lg:block -z-10">
-        <div className="relative group cursor-pointer">
+      <div className="absolute right-8 top-8 hidden lg:block -z-10 [perspective:1000px]">
+        <div className="relative group cursor-pointer w-16 h-16 [transform-style:preserve-3d] transition-all duration-700 ease-out hover:[transform:rotateX(25deg)_rotateY(-25deg)_scale(1.1)]">
           <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full scale-50 group-hover:scale-150 transition-transform duration-700 ease-out" />
           <svg 
-            className="size-16 text-accent/30 group-hover:text-accent transition-all duration-500 ease-out group-hover:rotate-90 group-hover:scale-110" 
+            className="w-full h-full text-accent/30 group-hover:text-accent transition-all duration-500 ease-out group-hover:[transform:translateZ(20px)] drop-shadow-xl" 
             viewBox="0 0 24 24" 
             fill="none" 
             stroke="currentColor" 
-            strokeWidth="1"
+            strokeWidth="1.5"
           >
             <path d="M12 2L2 22h20L12 2z" strokeLinejoin="round" />
             <circle cx="12" cy="14" r="3" />
+            <path d="M12 2v20" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
           </svg>
         </div>
       </div>
