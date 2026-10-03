@@ -278,8 +278,28 @@ export function Wordmark({ className }: { className?: string }) {
 }
 
 /** Page shell: one place that owns max width and horizontal rhythm. */
-export function Page({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cx("mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-10", className)} {...props} />;
+export function Page({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cx("mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-10 relative animate-in fade-in slide-in-from-bottom-4 duration-500", className)} {...props}>
+      {/* Decorative Interactive Graphic */}
+      <div className="absolute right-8 top-8 hidden lg:block -z-10">
+        <div className="relative group cursor-pointer">
+          <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full scale-50 group-hover:scale-150 transition-transform duration-700 ease-out" />
+          <svg 
+            className="size-16 text-accent/30 group-hover:text-accent transition-all duration-500 ease-out group-hover:rotate-90 group-hover:scale-110" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="1"
+          >
+            <path d="M12 2L2 22h20L12 2z" strokeLinejoin="round" />
+            <circle cx="12" cy="14" r="3" />
+          </svg>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function PageHeader({

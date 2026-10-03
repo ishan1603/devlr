@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getMe } from "@/lib/profile";
 import { createClient } from "@/lib/server";
+import { Page, PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Companies" };
 
@@ -28,15 +29,13 @@ export default async function CompaniesPage() {
   }));
 
   return (
-    <div className="max-w-3xl mx-auto space-y-12">
-      <header className="space-y-2">
-        <h1 className="text-2xl tracking-tight">Company Radar</h1>
-        <p className="text-subtle">
-          Follow engineering organizations to receive updates when they ship, publish blog posts, or experience incidents.
-        </p>
-      </header>
+    <Page>
+      <PageHeader 
+        title="Company Radar" 
+        description="Follow engineering organizations to receive updates when they ship, publish blog posts, or experience incidents." 
+      />
 
-      <div className="surface border border-white/5 rounded-lg overflow-hidden">
+      <div className="surface border border-white/5 rounded-lg overflow-hidden mt-8">
         <table className="w-full text-left text-sm">
           <thead className="bg-surface-sunken border-b border-white/5 text-subtle">
             <tr>
@@ -80,6 +79,6 @@ export default async function CompaniesPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </Page>
   );
 }

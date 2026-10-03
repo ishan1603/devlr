@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getMe } from "@/lib/profile";
 import { createClient } from "@/lib/server";
+import { Page, PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Learn" };
 
@@ -27,13 +28,11 @@ export default async function LearnPage() {
   const history = progress?.slice(1) || [];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-12">
-      <header className="space-y-2">
-        <h1 className="text-2xl tracking-tight">Learn</h1>
-        <p className="text-subtle">
-          A daily question to test your knowledge on {me.profile.level || "intermediate"} topics.
-        </p>
-      </header>
+    <Page className="space-y-12">
+      <PageHeader 
+        title="Learn" 
+        description={`A daily question to test your knowledge on ${me.profile.level || "intermediate"} topics.`} 
+      />
 
       {!active ? (
         <div className="surface-sunken rounded-lg p-8 text-center text-subtle">
@@ -90,6 +89,6 @@ export default async function LearnPage() {
           </div>
         </section>
       )}
-    </div>
+    </Page>
   );
 }
