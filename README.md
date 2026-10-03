@@ -17,10 +17,10 @@ The whole thing runs on free tiers.
 | **Dev Pulse** | Built | New repositories that picked up stars fast, in the languages you write. |
 | **Feedback** | Built | Every story has a "more like this" and a "less like this" link. Use them and the next issue shifts. |
 | **Archive and feed** | Built | Every issue has a web page, and every account gets a private Atom feed. |
-| **Repo Guard** | Planned | Connect GitHub, pick repos, get told when a dependency is vulnerable, hijacked or deprecated, with the command that fixes it. |
-| **Learn** | Planned | A system design question at your level, with a worked answer. |
-| **Company Radar** | Planned | What the companies you follow shipped, wrote and open-sourced. |
-| **Release Radar** | Planned | Release notes for your dependencies, breaking changes first. |
+| **Repo Guard** | Built | Connect GitHub, pick repos, get told when a dependency is vulnerable, hijacked or deprecated, with the command that fixes it. |
+| **Learn** | Built | A system design question at your level, with a worked answer. |
+| **Company Radar** | Built | What the companies you follow shipped, wrote and open-sourced. |
+| **Release Radar** | Built | Release notes for your dependencies, breaking changes first. |
 
 Modules have their own cadence, but everything due on the same day arrives as one email. If
 there is nothing new, nothing is sent.
