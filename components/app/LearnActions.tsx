@@ -13,7 +13,7 @@ export default function LearnActions() {
   async function handleSend() {
     setSending(true);
     try {
-      await sendNow();
+      await sendNow(["learn"]);
       showSuccess("New topic incoming!", "We are generating your next learning question. It should arrive shortly.");
     } catch (err) {
       showError("Could not trigger issue", err instanceof Error ? err.message : undefined);

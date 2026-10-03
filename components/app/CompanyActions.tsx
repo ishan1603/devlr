@@ -13,7 +13,7 @@ export default function CompanyActions() {
   async function handleSend() {
     setSending(true);
     try {
-      await sendNow();
+      await sendNow(["company_radar"]);
       showSuccess("Radar incoming!", "We are compiling the latest updates from your followed companies. It should arrive shortly.");
     } catch (err) {
       showError("Could not trigger issue", err instanceof Error ? err.message : undefined);

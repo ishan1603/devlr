@@ -102,15 +102,17 @@ export const scheduleIssues = inngest.createFunction(
     // collapse into one.
     await step.sendEvent(
       "dispatch",
-      due.map(({ profile, verdict }) => ({
-        name: EVENTS.sendIssue,
-        data: {
-          userId: profile.user_id,
-          kind: "scheduled",
-          modules: verdict.modules,
-          dedupeKey: buildDedupeKey("scheduled", profile.user_id, verdict.slot),
-        } satisfies SendIssueEvent,
-      }))
+      due.flatMap(({ profile, verdict }) => 
+        verdict.modules.map(module => ({
+          name: EVENTS.sendIssue,
+          data: {
+            userId: profile.user_id,
+            kind: "scheduled",
+            modules: [module],
+            dedupeKey: buildDedupeKey("scheduled", profile.user_id, `${verdict.slot}-${module}`),
+          } satisfies SendIssueEvent,
+        }))
+      )
     );
 
     return { checked: profiles.length, dispatched: due.length };

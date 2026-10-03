@@ -10,7 +10,7 @@ import { buildDedupeKey, manualSlot } from "@/lib/delivery/ledger";
  * so it belongs in a background job, not in a request someone is waiting on.
  * The dedupe key is bucketed to the minute, so a double click is one email.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,12 +29,37 @@ export async function POST() {
     return NextResponse.json({ error: "Email is paused. Resume it in settings to send." }, { status: 409 });
   }
 
-  const dedupeKey = buildDedupeKey("manual", user.id, manualSlot());
+  const body = await request.json().catch(() => ({}));
+  let requestedModules = Array.isArray(body.modules) ? body.modules : [];
+
   try {
-    await inngest.send({
-      name: EVENTS.sendIssue,
-      data: { userId: user.id, kind: "manual", modules: [], dedupeKey } satisfies SendIssueEvent,
-    });
+    if (requestedModules.length === 0) {
+      // Fetch all active subscriptions for the user
+      const { data: subs } = await supabase
+        .from("user_subscriptions")
+        .select("module")
+        .eq("user_id", user.id)
+        .eq("paused", false);
+      
+      requestedModules = subs?.map(s => s.module) || [];
+    }
+
+    if (requestedModules.length === 0) {
+      return NextResponse.json({ error: "No active modules to send." }, { status: 400 });
+    }
+
+    // Dispatch separate events for each module
+    await inngest.send(
+      requestedModules.map((module: string) => ({
+        name: EVENTS.sendIssue,
+        data: { 
+          userId: user.id, 
+          kind: "manual", 
+          modules: [module], 
+          dedupeKey: buildDedupeKey("manual", user.id, `${manualSlot()}-${module}`) 
+        } satisfies SendIssueEvent,
+      }))
+    );
   } catch (err) {
     console.error("send-now: could not queue the send:", err);
     return NextResponse.json(

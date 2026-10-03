@@ -33,8 +33,11 @@ export function fetchPreview(): Promise<{ issue: Issue | null }> {
   return request<{ issue: Issue | null }>("/api/preview");
 }
 
-export function sendNow(): Promise<{ queued: boolean }> {
-  return request<{ queued: boolean }>("/api/send-now", { method: "POST" });
+export function sendNow(modules?: string[]): Promise<{ queued: boolean }> {
+  return request<{ queued: boolean }>("/api/send-now", { 
+    method: "POST",
+    body: modules ? JSON.stringify({ modules }) : undefined
+  });
 }
 
 export function deleteAccount(): Promise<{ deleted: boolean }> {

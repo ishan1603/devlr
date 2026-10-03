@@ -80,7 +80,7 @@ const SYSTEM_BASE = [
   "You are the editor of Devlr, a developer newsletter. You are given the contents of one",
   "issue, already chosen and summarised. Write three things.",
   "",
-  `subject: ${SUBJECT_MAX_LENGTH} characters at most. Keep it normal and consistent, such as "Your Devlr Issue for {DATE}" or "Your Dev Pulse update". You can mention what kind of updates are included (EOL, Dev Pulse, Learn, etc).`,
+  `subject: ${SUBJECT_MAX_LENGTH} characters at most. Keep it strictly to this format based on the primary content: "Your Dev Digest for {DATE}", "Your Dev Pulse for {DATE}", "Your Company Radar for {DATE}", "Your Learn Issue for {DATE}", or "Your EOL Update for {DATE}".`,
   "",
   `preheader: ${PREHEADER_MAX} characters at most. It appears next to the subject in the inbox.`,
   "Add a brief summary of the most important item in the issue.",
@@ -280,44 +280,46 @@ export function templateCopy(input: EditorInput): EditorOutput {
   let preheader: string;
   let intro: string;
 
-  if (lead) {
-    subject = fitSubject(lead.title);
-    const others = input.sections
-      .flatMap((s) => (s.type === "stories" ? s.items : []))
-      .filter((i) => i.ref !== lead.ref)
-      .slice(0, 2)
-      .map((i) => i.title);
-    preheader = others.length > 0 ? `Also: ${others.join("; ")}` : lead.summary;
-    intro =
-      total > 1
-        ? `${total} things worth your time${topics.length ? ` across ${joinList(topics)}` : ""}. Start with the first one.`
-        : lead.summary;
-  } else {
-    const first = input.sections[0];
-    if (first?.type === "guard") {
-      ({ subject, preheader, intro } = guardCopy(first, false));
-    } else if (first?.type === "eol") {
-      const e = first.entries[0];
-      subject = fitSubject(`${e.product} ${e.cycle} reaches end of life in ${Math.max(0, e.daysLeft)} days`);
-      preheader = "Lifecycle dates for the versions in your stack.";
-      intro = "Support windows are closing on versions in your stack. The dates are below.";
-    } else if (first?.type === "learn") {
-      subject = "Learn System Design: " + first.title;
+  const dateStr = input.date.toLocaleDateString();
+  const first = input.sections[0];
+  if (first) {
+    if (first.module === "digest") {
+      subject = `Your Dev Digest for ${dateStr}`;
+      preheader = lead ? lead.summary : "Top stories tailored to your tech stack.";
+      intro = total > 1 ? `${total} things worth your time across ${joinList(topics)}. Start with the first one.` : (lead?.summary ?? "");
+    } else if (first.module === "dev_pulse") {
+      subject = `Your Dev Pulse for ${dateStr}`;
+      preheader = lead ? lead.summary : "Latest news and updates.";
+      intro = total > 1 ? `${total} things worth your time. Start with the first one.` : (lead?.summary ?? "");
+    } else if (first.module === "company_radar") {
+      subject = `Your Company Radar for ${dateStr}`;
+      preheader = "Latest updates from companies you follow.";
+      intro = "Here are the latest updates from the companies you follow.";
+    } else if (first.module === "learn") {
+      subject = `Your Learn Issue for ${dateStr}`;
       preheader = "Your daily learning question is ready.";
       intro = "Take a moment to challenge yourself with today's system design question.";
-    } else if (first?.type === "company_radar") {
-      subject = "Updates from " + first.companies[0].name;
-      preheader = first.companies[0].updates[0]?.title || "Latest updates from companies you follow.";
-      intro = "Here are the latest updates from the companies you follow.";
-    } else if (first?.type === "repos") {
-      subject = fitSubject(`${first.repos[0].fullName} and ${first.repos.length - 1} more new repos`);
-      preheader = first.repos[0].description;
-      intro = "New repositories that picked up stars fast in the languages you use.";
+    } else if (first.module === "eol_watch") {
+      subject = `Your EOL Update for ${dateStr}`;
+      preheader = "Lifecycle dates for the versions in your stack.";
+      intro = "Support windows are closing on versions in your stack. The dates are below.";
+    } else if (first.module === "release_radar") {
+      subject = `Your Release Radar for ${dateStr}`;
+      preheader = "New releases for packages you care about.";
+      intro = "Here are the latest package releases.";
+    } else if (first.module === "repo_guard") {
+      subject = `Your Repo Guard for ${dateStr}`;
+      preheader = "Security and maintenance alerts for your repositories.";
+      intro = "Review these actionable alerts for your repositories.";
     } else {
-      subject = "Your Devlr issue";
+      subject = `Your Devlr Issue for ${dateStr}`;
       preheader = "";
       intro = "";
     }
+  } else {
+    subject = `Your Devlr Issue for ${dateStr}`;
+    preheader = "";
+    intro = "";
   }
 
   return {
